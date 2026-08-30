@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>단청 이음 연구소</title>
+<style>
+  :root{
+    --bg:#faf5e9; --paper:#fffdf7; --ink:#3b2f28; --ink-soft:#6b5c50;
+    --red:#b23b2e; --blue:#2c5a78; --green:#5c7a4d; --gold:#c8932f;
+    --line:#e6dcc8; --radius:20px; --shadow:0 6px 18px rgba(80,60,30,0.09);
+    --fs-base:16px;
+  }
+  *{box-sizing:border-box;}
+  html{font-size:var(--fs-base);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.55; padding-bottom:64px;
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(200,147,47,0.06) 0, transparent 40%),
+      radial-gradient(circle at 92% 85%, rgba(178,59,46,0.06) 0, transparent 40%);
+  }
+  #app{max-width:560px; margin:0 auto; padding:20px 18px 40px;}
+  h1{font-size:1.5rem; margin:0 0 4px;}
+  h2{font-size:1.15rem; margin:0 0 10px; color:var(--ink);}
+  h3{font-size:1rem; margin:0 0 8px;}
+  p{margin:0 0 12px;}
+  .muted{color:var(--ink-soft); font-size:0.9rem;}
+  .card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; margin-bottom:16px; box-shadow:var(--shadow);
+  }
+  .center{text-align:center;}
+  .top-brand{text-align:center; margin:18px 0 26px;}
+  .top-brand .sub{font-size:0.95rem; color:var(--ink-soft);}
+  .top-brand .motif{font-size:2.6rem; margin:6px 0;}
+  input[type=text], input[type=email], input[type=number], input[type=tel], textarea{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px;
+    font-size:1rem; background:#fff; color:var(--ink); font-family:inherit;
+  }
+  textarea{resize:vertical; min-height:70px;}
+  label.field-label{display:block; font-weight:600; margin:14px 0 6px; font-size:0.95rem;}
+  .char-count{text-align:right; font-size:0.78rem; color:var(--ink-soft); margin-top:2px;}
+  .btn{
+    display:inline-block; border:none; border-radius:14px; padding:13px 20px;
+    font-size:1rem; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .btn-main{
+    display:block; width:100%; padding:17px; font-size:1.08rem;
+    background:linear-gradient(135deg,var(--red),#8f2c22); color:#fff;
+    box-shadow:0 6px 14px rgba(178,59,46,0.28); margin-top:18px;
+  }
+  .btn-main:disabled{background:#cbb9a6; box-shadow:none; cursor:not-allowed;}
+  .btn-secondary{background:#fff; border:1px solid var(--line); color:var(--ink);}
+  .btn-ghost{background:transparent; color:var(--blue); text-decoration:underline; padding:8px 0;}
+  .btn-small{padding:8px 14px; font-size:0.85rem; border-radius:10px;}
+  .btn-danger{background:#fff; border:1px solid var(--red); color:var(--red);}
+  .row{display:flex; gap:10px;}
+  .row > *{flex:1;}
+  .scale-row{display:flex; gap:8px; justify-content:space-between; margin:8px 0;}
+  .scale-opt{
+    flex:1; text-align:center; padding:12px 4px; border:2px solid var(--line); border-radius:12px;
+    cursor:pointer; font-weight:700; background:#fff;
+  }
+  .scale-opt.selected{border-color:var(--gold); background:#fbeecb; color:#8a6217;}
+  .status-badge{display:inline-block; padding:4px 10px; border-radius:20px; font-size:0.8rem; font-weight:700;}
+  .status-done{background:#e4efdd; color:var(--green);}
+  .status-progress{background:#fbeecb; color:#8a6217;}
+  .status-locked{background:#eee; color:#999;}
+  .lesson-card{position:relative; overflow:hidden;}
+  .lesson-card .emoji{font-size:2.2rem;}
+  .lesson-card h2{margin-top:6px;}
+  .petal-list{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;}
+  .petal-chip{
+    background:#fdf1e0; border:1px solid var(--gold); color:#7a5613; border-radius:16px;
+    padding:8px 14px; font-weight:700; font-size:0.9rem; cursor:pointer;
+  }
+  .petal-chip.new{background:#eef4ea; border-color:var(--green); color:#3f5a34;}
+  .lotus-visual{font-size:3.2rem; text-align:center; margin:14px 0;}
+  .value-pick{
+    display:inline-block; margin:4px; padding:10px 16px; border:2px solid var(--line);
+    border-radius:14px; cursor:pointer; font-weight:700; background:#fff;
+  }
+  .value-pick.selected{border-color:var(--red); background:#fbe6e2; color:var(--red);}
+  .flower-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px;}
+  .flower-tile{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:14px 10px;
+    text-align:center; cursor:pointer;
+  }
+  .flower-tile .fe{font-size:1.8rem;}
+  table{width:100%; border-collapse:collapse; font-size:0.9rem;}
+  th, td{padding:8px 6px; border-bottom:1px solid var(--line); text-align:center;}
+  th{color:var(--ink-soft); font-weight:600;}
+  .menu-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0;}
+  .menu-tile{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:20px 10px;
+    text-align:center; cursor:pointer; font-weight:700;
+  }
+  .menu-tile .fe{font-size:1.6rem; display:block; margin-bottom:6px;}
+  .toolbar{
+    position:fixed; bottom:0; left:0; right:0; background:var(--paper); border-top:1px solid var(--line);
+    display:flex; justify-content:center; gap:14px; padding:8px; z-index:50;
+  }
+  .toolbar button{
+    background:none; border:1px solid var(--line); border-radius:10px; padding:6px 12px;
+    font-size:0.85rem; cursor:pointer; color:var(--ink-soft);
+  }
+  .toast{
+    position:fixed; top:16px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
+    padding:10px 18px; border-radius:30px; font-size:0.9rem; z-index:100; opacity:0.95;
+  }
+  .diff-layer{position:relative; width:100%; aspect-ratio:4/3; border-radius:16px; overflow:hidden; margin:14px 0; background:#efe6d3;}
+  .diff-layer svg{width:100%; height:100%; display:block;}
+  .toggle-row{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;}
+  .toggle-btn{
+    flex:1; min-width:70px; padding:10px 4px; border-radius:12px; border:2px solid var(--line);
+    background:#fff; text-align:center; font-weight:700; cursor:pointer; font-size:0.85rem;
+  }
+  .toggle-btn.off{opacity:0.45; border-color:#ccc;}
+  .footnote{font-size:0.75rem; color:var(--ink-soft); text-align:center; margin-top:24px;}
+  .lock-note{background:#f3ede0; border-radius:12px; padding:12px 14px; font-size:0.85rem; color:var(--ink-soft);}
+  a{color:var(--blue);}
+  .compare-box{display:flex; gap:10px; align-items:center;}
+  .compare-box .arrow{font-size:1.4rem; color:var(--gold);}
+  .pin-dots{display:flex; gap:10px; justify-content:center; margin:16px 0;}
+  .pin-dots input{
+    width:50px; height:56px; text-align:center; font-size:1.4rem; border-radius:12px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toolbar">
+  <button onclick="App.cycleFontSize()">🔠 글자 크기</button>
+  <button onclick="App.speakCurrent()">🔊 읽어주기</button>
+</div>
+<script>
+/* =========================================================
+   「단청 이음 연구소」 프론트엔드 (순수 HTML/CSS/JS SPA)
+   해시 라우팅 기반. Google Apps Script 웹앱을 API_BASE_URL로 호출한다.
+   ========================================================= */
+
+// TODO: Apps Script 배포 후 여기에 웹 앱 URL을 넣으세요.
+var API_BASE_URL = 'https://script.google.com/macros/s/AKfycbzjHrUMZhUF5HLp9zErVQbJtgG4nv_0VCiFzm2pTh0z7pdbMNy4w4ZoAFRf-kP6KyxnOg/exec';
+
+// ----------------- 공용 유틸 -----------------
+
+function uid(){
+  return 'xxxxxxxx'.replace(/x/g, function(){ return (Math.random()*16|0).toString(16); }) + Date.now().toString(36);
+}
+
+function getDeviceId(){
+  var id = localStorage.getItem('dcyeon_deviceId');
+  if(!id){ id = uid(); localStorage.setItem('dcyeon_deviceId', id); }
+  return id;
+}
+
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+async function api(action, payload){
+  payload = payload || {};
+  payload.action = action;
+  try{
+    var res = await fetch(API_BASE_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    return data;
+  }catch(err){
+    return { ok:false, error:'서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요.' };
+  }
+}
+
+function toast(msg){
+  var el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 2200);
+}
+
+function setApp(html){
+  document.getElementById('app').innerHTML = html;
+  window.scrollTo(0,0);
+}
+
+function loadingHtml(){
+  return '<div class="card center"><p>불러오는 중이에요…</p></div>';
+}
+
+// ----------------- 접근성: 글자 크기 / TTS -----------------
+
+var FONT_SCALES = [16, 19, 23];
+function cycleFontSizeInit(){
+  var saved = Number(localStorage.getItem('dcyeon_fontScale') || 16);
+  document.documentElement.style.setProperty('--fs-base', saved + 'px');
+}
+function cycleFontSizeApp(){
+  var cur = Number(getComputedStyle(document.documentElement).getPropertyValue('--fs-base')) ||
+    Number(localStorage.getItem('dcyeon_fontScale')) || 16;
+  var idx = FONT_SCALES.indexOf(cur);
+  var next = FONT_SCALES[(idx+1) % FONT_SCALES.length] || 16;
+  document.documentElement.style.setProperty('--fs-base', next + 'px');
+  localStorage.setItem('dcyeon_fontScale', next);
+  toast('글자 크기: ' + (next===16?'기본':next===19?'크게':'아주 크게'));
+}
+function speakCurrentApp(){
+  if(!('speechSynthesis' in window)){ toast('이 브라우저는 읽어주기를 지원하지 않아요.'); return; }
+  var appEl = document.getElementById('app');
+  var text = appEl.innerText || appEl.textContent || '';
+  text = text.slice(0, 500);
+  if(!text.trim()){ toast('읽을 내용이 없어요.'); return; }
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR'; u.rate = 0.95;
+  window.speechSynthesis.speak(u);
+}
+
+// ----------------- 세션 상태 -----------------
+
+var Session = {
+  get studentCode(){ return localStorage.getItem('dcyeon_studentCode') || ''; },
+  set studentCode(v){ localStorage.setItem('dcyeon_studentCode', v || ''); },
+  get classCode(){ return localStorage.getItem('dcyeon_classCode') || ''; },
+  set classCode(v){ localStorage.setItem('dcyeon_classCode', v || ''); },
+  get teacherClassCode(){ return sessionStorage.getItem('dcyeon_teacherClassCode') || ''; },
+  set teacherClassCode(v){ sessionStorage.setItem('dcyeon_teacherClassCode', v || ''); },
+  get teacherToken(){ return sessionStorage.getItem('dcyeon_teacherToken') || ''; },
+  set teacherToken(v){ sessionStorage.setItem('dcyeon_teacherToken', v || ''); },
+  clearStudent(){ localStorage.removeItem('dcyeon_studentCode'); localStorage.removeItem('dcyeon_classCode'); },
+  clearTeacher(){ sessionStorage.removeItem('dcyeon_teacherClassCode'); sessionStorage.removeItem('dcyeon_teacherToken'); }
+};
+
+// ----------------- draft 임시저장 (localStorage 전용) -----------------
+
+var Draft = {
+  key(name){ return 'dcyeon_draft_' + (Session.studentCode||'anon') + '_' + name; },
+  save(name, data){ localStorage.setItem(this.key(name), JSON.stringify(data)); },
+  load(name){
+    var raw = localStorage.getItem(this.key(name));
+    try{ return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+  },
+  clear(name){ localStorage.removeItem(this.key(name)); },
+  debounced(name, getData, delay){
+    delay = delay || 2000;
+    var timer = null;
+    return function(){
+      clearTimeout(timer);
+      timer = setTimeout(function(){ Draft.save(name, getData()); }, delay);
+    };
+  }
+};
+
+// ----------------- 라우터 -----------------
+
+var Router = { routes:{} };
+function route(path, fn){ Router.routes[path] = fn; }
+
+function parseHash(){
+  var h = location.hash.replace(/^#/,'') || '/';
+  var qIdx = h.indexOf('?');
+  var query = {};
+  if(qIdx !== -1){
+    var qs = h.slice(qIdx+1); h = h.slice(0, qIdx);
+    qs.split('&').forEach(function(pair){
+      if(!pair) return;
+      var kv = pair.split('=');
+      query[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]||'');
+    });
+  }
+  return { path:h, query:query };
+}
+
+function renderRoute(){
+  var parsed = parseHash();
+  var fn = Router.routes[parsed.path];
+  if(!fn){ fn = Router.routes['/']; }
+  fn(parsed.query);
+}
+
+window.addEventListener('hashchange', renderRoute);
+window.addEventListener('DOMContentLoaded', function(){
+  cycleFontSizeInit();
+  getDeviceId();
+  renderRoute();
+});
+
+function go(path){ location.hash = '#' + path; }
+
+// App 네임스페이스 (버튼 onclick에서 참조)
+var App = {
+  cycleFontSize: cycleFontSizeApp,
+  speakCurrent: speakCurrentApp
+};
+</script>
+<script>
+/* =========================================================
+   1단계: 로그인 + 학급 생성 (명세 2~5번)
+   ========================================================= */
+
+var _lastCreatedClass = null;
+
+route('/', function(){
+  setApp(
+    '<div class="top-brand">' +
+      '<h1>색을 입혀 시간을 잇다, 단청</h1>' +
+      '<div class="sub">단청 이음 연구소</div>' +
+      '<div class="motif">🌸</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label class="field-label" for="login-code">나의 이음 코드를 입력하세요.</label>' +
+      '<input type="text" id="login-code" placeholder="예: 단청5607" autocomplete="off" />' +
+      '<div id="login-error" class="muted" style="color:var(--red); min-height:20px;"></div>' +
+      '<button class="btn btn-main" onclick="App.doLogin()">연구소 들어가기</button>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/create-class\')">＋ 새 학급 만들기</button></div>' +
+    '<div class="footnote">이 로그인 방식은 비밀번호가 없어요. 같은 교실 안에서 선생님의 지도 아래 사용하는 것을 전제로 설계되었습니다.</div>'
+  );
+  var input = document.getElementById('login-code');
+  input.focus();
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') App.doLogin(); });
+});
+
+App.doLogin = async function(){
+  var code = document.getElementById('login-code').value.trim();
+  var errEl = document.getElementById('login-error');
+  errEl.textContent = '';
+  if(!code){ errEl.textContent = '이음 코드를 입력해 주세요.'; return; }
+  var res = await api('login', { code: code });
+  if(!res.ok){ errEl.textContent = res.error || '다시 확인해 주세요.'; return; }
+  if(res.type === 'student'){
+    Session.studentCode = res.studentCode;
+    Session.classCode = res.classCode;
+    go('/student/home');
+  } else if(res.type === 'teacher'){
+    Session.teacherClassCode = res.classCode;
+    go('/teacher/auth');
+  }
+};
+
+function suggestClassCode(){
+  var school = document.getElementById('cc-school').value.trim();
+  var grade = document.getElementById('cc-grade').value.trim();
+  var classNum = document.getElementById('cc-classnum').value.trim();
+  var base = school.replace(/초등학교$|학교$/,'').slice(0,2);
+  var codeField = document.getElementById('cc-code');
+  if(codeField.dataset.userEdited === 'true') return;
+  if(base && grade && classNum) codeField.value = base + grade + classNum;
+}
+
+route('/create-class', function(){
+  setApp(
+    '<div class="top-brand"><h1>새 학급 만들기</h1><div class="sub">선생님 정보를 입력해 주세요</div></div>' +
+    '<div class="card">' +
+      '<label class="field-label">학교 이름</label><input type="text" id="cc-school" placeholder="예: 단청초등학교" oninput="suggestClassCode()" />' +
+      '<div class="row">' +
+        '<div><label class="field-label">학년</label><input type="text" id="cc-grade" placeholder="5" oninput="suggestClassCode()" /></div>' +
+        '<div><label class="field-label">반</label><input type="text" id="cc-classnum" placeholder="6" oninput="suggestClassCode()" /></div>' +
+      '</div>' +
+      '<label class="field-label">학생 수</label><input type="number" id="cc-count" placeholder="24" min="1" max="40" />' +
+      '<label class="field-label">학급코드 (자동 제안, 수정 가능)</label>' +
+      '<input type="text" id="cc-code" placeholder="단청56" oninput="this.dataset.userEdited=\'true\'" />' +
+      '<label class="field-label">교사 관리번호 (4자리 숫자)</label>' +
+      '<input type="tel" id="cc-pin" maxlength="4" placeholder="●●●●" />' +
+      '<label class="field-label">관리번호 확인</label>' +
+      '<input type="tel" id="cc-pin2" maxlength="4" placeholder="●●●●" />' +
+      '<label class="field-label">교사 이메일 (선택, 관리번호 분실 시 복구용)</label>' +
+      '<input type="email" id="cc-email" placeholder="teacher@school.kr" />' +
+      '<div id="cc-error" class="muted" style="color:var(--red); min-height:20px;"></div>' +
+      '<button class="btn btn-main" id="cc-submit" onclick="App.doCreateClass()">학급 만들기</button>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/\')">← 로그인 화면으로</button></div>'
+  );
+});
+
+App.doCreateClass = async function(){
+  var errEl = document.getElementById('cc-error');
+  errEl.textContent = '';
+  var school = document.getElementById('cc-school').value.trim();
+  var grade = document.getElementById('cc-grade').value.trim();
+  var classNumber = document.getElementById('cc-classnum').value.trim();
+  var count = document.getElementById('cc-count').value.trim();
+  var code = document.getElementById('cc-code').value.trim();
+  var pin = document.getElementById('cc-pin').value.trim();
+  var pin2 = document.getElementById('cc-pin2').value.trim();
+  var email = document.getElementById('cc-email').value.trim();
+
+  if(!school || !grade || !classNumber || !count || !code){ errEl.textContent = '필수 항목을 모두 입력해 주세요.'; return; }
+  if(!/^\d{4}$/.test(pin)){ errEl.textContent = '관리번호는 4자리 숫자로 입력해 주세요.'; return; }
+  if(pin !== pin2){ errEl.textContent = '관리번호가 서로 달라요. 다시 확인해 주세요.'; return; }
+
+  var btn = document.getElementById('cc-submit');
+  btn.disabled = true; btn.textContent = '만드는 중…';
+  var res = await api('createClass', {
+    schoolName: school, grade: grade, classNumber: classNumber,
+    studentCount: count, classCode: code, teacherPIN: pin, teacherEmail: email
+  });
+  btn.disabled = false; btn.textContent = '학급 만들기';
+  if(!res.ok){ errEl.textContent = res.error || '학급을 만들지 못했어요.'; return; }
+  _lastCreatedClass = res;
+  go('/class-created');
+};
+
+route('/class-created', function(){
+  if(!_lastCreatedClass){ go('/'); return; }
+  var c = _lastCreatedClass;
+  setApp(
+    '<div class="top-brand"><h1>🌸</h1></div>' +
+    '<div class="card center">' +
+      '<h2>우리 반 이음 코드가 만들어졌어요.</h2>' +
+      '<p><strong>학급 코드</strong><br><span style="font-size:1.3rem;">' + escapeHtml(c.classCode) + '</span></p>' +
+      '<p><strong>학생 코드</strong><br>' + escapeHtml(c.studentCodeStart) + ' ~ ' + escapeHtml(c.studentCodeEnd) + '</p>' +
+      '<p><strong>교사용 코드</strong><br>' + escapeHtml(c.teacherCode) + '</p>' +
+      '<p class="muted">교사 관리번호는 다시 표시되지 않아요. 잊지 않도록 따로 기록해 두세요.</p>' +
+      '<button class="btn btn-main" onclick="Session.teacherClassCode=\'' + escapeHtml(c.classCode) + '\'; go(\'/teacher/auth\')">교사 연구실로 이동</button>' +
+    '</div>'
+  );
+});
+
+route('/teacher/auth', function(){
+  var classCode = Session.teacherClassCode;
+  if(!classCode){ go('/'); return; }
+  setApp(
+    '<div class="top-brand"><h1>교사 연구실</h1><div class="sub">' + escapeHtml(classCode) + '</div></div>' +
+    '<div class="card center">' +
+      '<p>관리번호를 입력하세요.</p>' +
+      '<div class="pin-dots"><input type="tel" id="pin-input" maxlength="4" style="width:140px; letter-spacing:10px;" /></div>' +
+      '<div id="pin-error" class="muted" style="color:var(--red); min-height:40px;"></div>' +
+      '<button class="btn btn-main" id="pin-submit" onclick="App.doVerifyPin()">확인</button>' +
+      '<div style="margin-top:14px;"><a href="javascript:void(0)" onclick="App.doResetPin()">관리번호를 잊으셨나요?</a></div>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/\')">← 로그인 화면으로</button></div>'
+  );
+  var pinInput = document.getElementById('pin-input');
+  pinInput.focus();
+  pinInput.addEventListener('keydown', function(e){ if(e.key==='Enter') App.doVerifyPin(); });
+});
+
+var _pinLockTimer = null;
+App.doVerifyPin = async function(){
+  var classCode = Session.teacherClassCode;
+  var pin = document.getElementById('pin-input').value.trim();
+  var errEl = document.getElementById('pin-error');
+  if(!/^\d{4}$/.test(pin)){ errEl.textContent = '4자리 숫자를 입력해 주세요.'; return; }
+  var res = await api('verifyTeacherPin', { classCode: classCode, pin: pin, deviceId: getDeviceId() });
+  if(res.locked){
+    startPinLockCountdown(res.remainSeconds);
+    return;
+  }
+  if(!res.ok){
+    errEl.textContent = (res.error || '관리번호를 다시 확인해 주세요.') +
+      (res.remainAttempts!=null ? ' (남은 시도 ' + res.remainAttempts + '회)' : '');
+    return;
+  }
+  Session.teacherToken = res.sessionToken;
+  Session.teacherClassCode = classCode;
+  go('/teacher/home');
+};
+
+function startPinLockCountdown(seconds){
+  clearInterval(_pinLockTimer);
+  var remain = seconds;
+  var errEl = document.getElementById('pin-error');
+  var submitBtn = document.getElementById('pin-submit');
+  if(submitBtn) submitBtn.disabled = true;
+  function tick(){
+    if(!errEl) { clearInterval(_pinLockTimer); return; }
+    var m = Math.floor(remain/60), s = remain%60;
+    errEl.textContent = '잠시 후 다시 시도해 주세요. (남은 시간 ' + m + ':' + (s<10?'0':'')+s + ')';
+    remain--;
+    if(remain < 0){
+      clearInterval(_pinLockTimer);
+      errEl.textContent = '';
+      if(submitBtn) submitBtn.disabled = false;
+    }
+  }
+  tick();
+  _pinLockTimer = setInterval(tick, 1000);
+}
+
+App.doResetPin = async function(){
+  var classCode = Session.teacherClassCode;
+  var res = await api('resetTeacherPin', { classCode: classCode });
+  toast(res.ok ? res.message : (res.error || '재설정에 실패했어요.'));
+};
+</script>
+<script>
+/* =========================================================
+   공용 UI 컴포넌트 (스케일 선택, 글자수 카운터)
+   ========================================================= */
+
+function scaleRowHtml(id, selected, lowLabel, highLabel){
+  var opts = '';
+  for(var i=1;i<=5;i++){
+    opts += '<div class="scale-opt' + (Number(selected)===i?' selected':'') + '" ' +
+      'onclick="selectScale(\'' + id + '\',' + i + ')" id="' + id + '-opt-' + i + '">' + i + '</div>';
+  }
+  return '<div class="scale-row">' + opts + '</div>' +
+    '<div class="muted" style="display:flex; justify-content:space-between;"><span>' + lowLabel + '</span><span>' + highLabel + '</span></div>' +
+    '<input type="hidden" id="' + id + '" value="' + (selected||'') + '" />';
+}
+function selectScale(id, val){
+  document.getElementById(id).value = val;
+  for(var i=1;i<=5;i++){
+    var el = document.getElementById(id+'-opt-'+i);
+    if(el) el.classList.toggle('selected', i===val);
+  }
+  App.maybeUpdateMainButton && App.maybeUpdateMainButton();
+}
+function bindCounter(taId, counterId, max){
+  var ta = document.getElementById(taId);
+  var counter = document.getElementById(counterId);
+  function update(){ counter.textContent = ta.value.length + ' / ' + max; }
+  ta.addEventListener('input', update);
+  update();
+}
+
+/* =========================================================
+   2단계: 학생 홈 + 1차시 전체 플로우 (명세 6~19번)
+   ========================================================= */
+
+route('/student/home', async function(){
+  if(!Session.studentCode){ go('/'); return; }
+  setApp(loadingHtml());
+  var res = await api('getStudentHome', { studentCode: Session.studentCode });
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error||'불러오지 못했어요.') + '</p><button class="btn btn-secondary" onclick="go(\'/\')">로그인 화면으로</button></div>'); return; }
+
+  var l1btnLabel = res.lesson1Status === 'not_started' ? '시작하기' :
+    res.lesson1Status === 'step2_done' ? '나의 연꽃 피우기' :
+    res.lesson1Status === 'lotus_done' ? '' : '이어하기';
+  var l1Target = res.lesson1Status === 'not_started' ? '/student/lesson1/step1' :
+    res.lesson1Status === 'step1_done' ? '/student/lesson1/step2' :
+    res.lesson1Status === 'step2_done' ? '/student/lesson1/lotus' : '';
+
+  var l2html;
+  if(!res.lesson2Unlocked){
+    var lockMsg = res.lesson2LockReason === 'lesson1_incomplete' ? '🔒 1차시를 먼저 완료해 주세요' : '🔒 선생님이 아직 열지 않았어요';
+    l2html = '<div class="status-badge status-locked">' + lockMsg + '</div>';
+  } else if(res.lesson2Status === 'final_done'){
+    l2html = '<div class="status-badge status-done">✓ 탐구 완료</div>' +
+      '<button class="btn btn-secondary" style="margin-top:10px;" onclick="go(\'/student/final\')">나의 결과 보기</button>';
+  } else {
+    var l2Target = res.lesson2Status === 'not_started' ? '/student/lesson2/step1' :
+      res.lesson2Status === 'step1_done' ? '/student/lesson2/step2' : '/student/lesson2/step3';
+    var l2Label = res.lesson2Status === 'not_started' ? '시작하기' : '이어하기';
+    l2html = '<button class="btn btn-main" onclick="go(\'' + l2Target + '\')">2차시 탐구하기 · ' + l2Label + '</button>';
+  }
+
+  setApp(
+    '<div class="top-brand"><h1>🌸 나의 단청 이음 기록</h1><div class="sub">' + escapeHtml(res.studentCode) + ' 연구원</div></div>' +
+    '<div class="card lesson-card">' +
+      '<span class="emoji">🌱</span><h2>1차시 · 색 속에 담긴 시간을 읽다</h2>' +
+      '<p class="muted">단청에는 무엇이 담겨 있을까?</p>' +
+      '<div class="status-badge ' + (res.lesson1Status==='lotus_done'?'status-done':'status-progress') + '">' + res.lesson1Label + '</div>' +
+      (l1Target ? '<button class="btn btn-main" onclick="go(\''+l1Target+'\')">1차시 탐구하기 · ' + l1btnLabel + '</button>' : '') +
+    '</div>' +
+    '<div class="card lesson-card">' +
+      '<span class="emoji">🌸</span><h2>2차시 · 오늘의 색으로 시간을 잇다</h2>' +
+      '<p class="muted">단청을 잇는다는 것은 무엇일까?</p>' +
+      l2html +
+    '</div>'
+  );
+});
+
+// ---------- STEP 1: 탐구 전 나의 생각 ----------
+
+route('/student/lesson1/step1', function(){
+  var draft = Draft.load('l1step1') || {};
+  setApp(
+    '<div class="top-brand"><h2>「탐구 전 나의 생각」</h2></div>' +
+    '<div class="card">' +
+      '<h3>나는 지금 단청에 대해 얼마나 알고 있나요?</h3>' +
+      scaleRowHtml('pre-understanding', draft.preUnderstanding, '처음 들어봤어요', '설명할 수 있어요') +
+      '<h3 style="margin-top:20px;">나는 단청에 대해 얼마나 더 알아보고 싶나요?</h3>' +
+      scaleRowHtml('pre-interest', draft.preInterest, '별로 궁금하지 않아요', '매우 궁금해요') +
+      '<label class="field-label" style="margin-top:20px;">지금 내가 생각하는 단청은 무엇인가요?</label>' +
+      '<p class="muted" style="margin-bottom:4px;">단청은</p>' +
+      '<textarea id="pre-concept" maxlength="100" placeholder="예: 옛 건물을 아름답게 꾸미는 무늬">' + escapeHtml(draft.preConcept||'') + '</textarea>' +
+      '<div class="char-count" id="pre-concept-count"></div>' +
+      '<p class="muted">…이다.</p>' +
+      '<button class="btn btn-main" onclick="App.saveLesson1Step1()">내 생각 저장하기</button>' +
+    '</div>'
+  );
+  bindCounter('pre-concept','pre-concept-count',100);
+  var save = Draft.debounced('l1step1', function(){
+    return {
+      preUnderstanding: document.getElementById('pre-understanding').value,
+      preInterest: document.getElementById('pre-interest').value,
+      preConcept: document.getElementById('pre-concept').value
+    };
+  });
+  document.getElementById('pre-concept').addEventListener('input', save);
+  App.maybeUpdateMainButton = save; // 척도 선택 시에도 draft 저장
+});
+
+App.saveLesson1Step1 = async function(){
+  var u = document.getElementById('pre-understanding').value;
+  var i = document.getElementById('pre-interest').value;
+  var c = document.getElementById('pre-concept').value.trim();
+  if(!u || !i){ toast('이해도와 관심도를 선택해 주세요.'); return; }
+  var res = await api('saveLesson1Step1', { studentCode: Session.studentCode, preUnderstanding:u, preInterest:i, preConcept:c });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  Draft.clear('l1step1');
+  go('/student/lesson1/saved');
+};
+
+route('/student/lesson1/saved', function(){
+  setApp(
+    '<div class="card center" style="margin-top:60px;">' +
+      '<div style="font-size:3rem;">🌱</div>' +
+      '<h2>첫 번째 생각을 저장했어요.</h2>' +
+      '<p class="muted">수업이 끝난 뒤 다시 만나볼 거예요.</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/lesson1/step2\')">다음</button>' +
+    '</div>'
+  );
+});
+
+// ---------- STEP 2: 단청을 벗겨 보자 ----------
+
+var _diffLayers = { color:true, pattern:true, repeat:true, symmetry:true };
+
+function dancheongSvg(){
+  return '<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">' +
+    '<rect width="200" height="150" fill="#efe6d3"/>' +
+    '<g id="layer-repeat" opacity="' + (_diffLayers.repeat?1:0) + '">' +
+      '<rect x="10" y="10" width="30" height="130" fill="#d8c9a3"/>' +
+      '<rect x="160" y="10" width="30" height="130" fill="#d8c9a3"/>' +
+    '</g>' +
+    '<g id="layer-symmetry" opacity="' + (_diffLayers.symmetry?1:0) + '">' +
+      '<circle cx="70" cy="75" r="34" fill="none" stroke="#b23b2e" stroke-width="2"/>' +
+      '<circle cx="130" cy="75" r="34" fill="none" stroke="#b23b2e" stroke-width="2"/>' +
+    '</g>' +
+    '<g id="layer-pattern" opacity="' + (_diffLayers.pattern?1:0) + '">' +
+      '<path d="M70 55 L82 75 L70 95 L58 75 Z" fill="none" stroke="#2c5a78" stroke-width="2"/>' +
+      '<path d="M130 55 L142 75 L130 95 L118 75 Z" fill="none" stroke="#2c5a78" stroke-width="2"/>' +
+      '<circle cx="70" cy="75" r="8" fill="#2c5a78"/><circle cx="130" cy="75" r="8" fill="#2c5a78"/>' +
+    '</g>' +
+    '<g id="layer-color" opacity="' + (_diffLayers.color?1:0) + '">' +
+      '<circle cx="70" cy="75" r="6" fill="#c8932f"/><circle cx="130" cy="75" r="6" fill="#c8932f"/>' +
+    '</g>' +
+  '</svg>';
+}
+
+route('/student/lesson1/step2', function(){
+  _diffLayers = { color:true, pattern:true, repeat:true, symmetry:true };
+  var draft = Draft.load('l1step2') || {};
+  setApp(
+    '<div class="top-brand"><h2>「단청을 벗겨 보자」</h2></div>' +
+    '<div class="card">' +
+      '<div class="diff-layer" id="diff-svg-wrap">' + dancheongSvg() + '</div>' +
+      '<div class="toggle-row">' +
+        '<div class="toggle-btn" id="tg-color" onclick="App.toggleLayer(\'color\')">🎨 색</div>' +
+        '<div class="toggle-btn" id="tg-pattern" onclick="App.toggleLayer(\'pattern\')">🌸 문양</div>' +
+        '<div class="toggle-btn" id="tg-repeat" onclick="App.toggleLayer(\'repeat\')">🔁 반복</div>' +
+        '<div class="toggle-btn" id="tg-symmetry" onclick="App.toggleLayer(\'symmetry\')">⚖ 대칭</div>' +
+      '</div>' +
+      '<p class="muted">버튼을 눌러 요소를 지워보고 비교해 보세요. (실제 수업에서는 선생님이 준비한 단청 사진으로 진행합니다)</p>' +
+      '<h3 style="margin-top:16px;">어떤 요소가 사라졌을 때 가장 크게 달라졌나요?</h3>' +
+      '<div id="removed-choice">' +
+        ['색','문양','반복','대칭'].map(function(v){
+          return '<span class="value-pick' + (draft.removedElementChoice===v?' selected':'') + '" onclick="App.pickRemoved(this,\''+v+'\')">'+v+'</span>';
+        }).join('') +
+      '</div>' +
+      '<input type="hidden" id="removed-choice-val" value="' + escapeHtml(draft.removedElementChoice||'') + '" />' +
+      '<label class="field-label">왜 그렇게 생각했나요?</label>' +
+      '<textarea id="removed-reason" maxlength="300" placeholder="이유를 적어 주세요">' + escapeHtml(draft.removedElementReason||'') + '</textarea>' +
+      '<button class="btn btn-main" onclick="App.saveLesson1Step2()">실험 기록 저장</button>' +
+    '</div>'
+  );
+  var save = Draft.debounced('l1step2', function(){
+    return {
+      removedElementChoice: document.getElementById('removed-choice-val').value,
+      removedElementReason: document.getElementById('removed-reason').value
+    };
+  });
+  document.getElementById('removed-reason').addEventListener('input', save);
+  App._saveL1Step2Draft = save;
+});
+
+App.toggleLayer = function(name){
+  _diffLayers[name] = !_diffLayers[name];
+  document.getElementById('diff-svg-wrap').innerHTML = dancheongSvg();
+  document.getElementById('tg-'+name).classList.toggle('off', !_diffLayers[name]);
+};
+App.pickRemoved = function(el, value){
+  document.querySelectorAll('#removed-choice .value-pick').forEach(function(e){ e.classList.remove('selected'); });
+  el.classList.add('selected');
+  document.getElementById('removed-choice-val').value = value;
+  App._saveL1Step2Draft && App._saveL1Step2Draft();
+};
+
+App.saveLesson1Step2 = async function(){
+  var choice = document.getElementById('removed-choice-val').value;
+  var reason = document.getElementById('removed-reason').value.trim();
+  if(!choice){ toast('요소를 하나 선택해 주세요.'); return; }
+  var res = await api('saveLesson1Step2', { studentCode: Session.studentCode, removedElementChoice:choice, removedElementReason:reason });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  Draft.clear('l1step2');
+  go('/student/lesson1/interstitial');
+};
+
+route('/student/lesson1/interstitial', function(){
+  setApp(
+    '<div class="card center" style="margin-top:60px;">' +
+      '<div style="font-size:3rem;">🔎</div>' +
+      '<h2>탐구 기록을 저장했어요!</h2>' +
+      '<p class="muted">이제 선생님과 친구들과 단청의 비밀을 찾아보세요.</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/home\')">홈으로</button>' +
+    '</div>'
+  );
+});
+
+// ---------- STEP 3: 연꽃 피우기 (13~18번) ----------
+
+var _lotus = { values:[], reasons:[], generalization:'' };
+
+async function loadLotusState(){
+  var res = await api('getFinalResult', { studentCode: Session.studentCode });
+  if(res.ok){
+    _lotus.values = res.lotusValues || [];
+    _lotus.reasons = []; // 이유는 화면 표시용으로만 필요, 서버가 개별 반환하지 않으므로 draft 참고
+    _lotus.generalization = res.lesson1Generalization || '';
+  }
+}
+
+route('/student/lesson1/lotus', async function(){
+  setApp(loadingHtml());
+  await loadLotusState();
+  renderLotusScreen();
+});
+
+function renderLotusScreen(){
+  var petals = _lotus.values.map(function(v,idx){
+    return '<span class="petal-chip" onclick="App.editPetalPrompt('+idx+')">🌸 ' + escapeHtml(v) + '</span>';
+  }).join('');
+  var canComplete = _lotus.values.length >= 3;
+  var draft = Draft.load('l1lotusGen') || {};
+
+  setApp(
+    '<div class="top-brand"><h2>나의 연꽃</h2><p class="muted">오늘 단청에서 어떤 가치를 발견했나요?</p></div>' +
+    '<div class="card center">' +
+      '<div class="lotus-visual">' + (_lotus.values.length ? '🌸' : '🌱') + '</div>' +
+      '<div class="petal-list" style="justify-content:center;">' + petals + '</div>' +
+      (_lotus.values.length < 6 ? '<button class="btn btn-secondary" onclick="App.openPetalForm()">＋ 꽃잎 피우기</button>' : '<p class="muted">꽃잎을 최대로 피웠어요.</p>') +
+      (!canComplete ? '<div class="lock-note" style="margin-top:14px;">가치를 3개 이상 발견하면 연꽃의 마음을 완성할 수 있어요. (' + _lotus.values.length + '/3)</div>' : '') +
+    '</div>' +
+    '<div id="petal-form-area"></div>' +
+    (canComplete ?
+      '<div class="card">' +
+        '<h3>「연꽃의 마음」</h3>' +
+        '<p class="muted">이 가치들을 하나로 묶어 말한다면 단청에는 무엇이 담겨 있을까요?</p>' +
+        '<textarea id="lotus-gen" maxlength="150">' + escapeHtml(draft.text || _lotus.generalization || '') + '</textarea>' +
+        '<div class="char-count" id="lotus-gen-count"></div>' +
+        '<button class="btn btn-main" onclick="App.completeLotus()">나의 연꽃 완성하기</button>' +
+      '</div>' : ''
+    ) +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/student/home\')">홈으로</button></div>'
+  );
+  if(canComplete){
+    bindCounter('lotus-gen','lotus-gen-count',150);
+    document.getElementById('lotus-gen').addEventListener('input', Draft.debounced('l1lotusGen', function(){
+      return { text: document.getElementById('lotus-gen').value };
+    }));
+  }
+}
+
+App.openPetalForm = function(){
+  var draft = Draft.load('l1petal') || {};
+  document.getElementById('petal-form-area').innerHTML =
+    '<div class="card">' +
+      '<label class="field-label">내가 발견한 가치</label>' +
+      '<input type="text" id="petal-value" maxlength="10" placeholder="예: 정성" value="' + escapeHtml(draft.value||'') + '" />' +
+      '<label class="field-label">그렇게 생각한 까닭</label>' +
+      '<textarea id="petal-reason" maxlength="60" placeholder="이유를 적어 주세요">' + escapeHtml(draft.reason||'') + '</textarea>' +
+      '<div class="char-count" id="petal-reason-count"></div>' +
+      '<button class="btn btn-main" onclick="App.submitPetal()">꽃잎 피우기</button>' +
+    '</div>';
+  bindCounter('petal-reason','petal-reason-count',60);
+  var save = Draft.debounced('l1petal', function(){
+    return { value: document.getElementById('petal-value').value, reason: document.getElementById('petal-reason').value };
+  });
+  document.getElementById('petal-value').addEventListener('input', save);
+  document.getElementById('petal-reason').addEventListener('input', save);
+};
+
+App.submitPetal = async function(){
+  var value = document.getElementById('petal-value').value.trim();
+  var reason = document.getElementById('petal-reason').value.trim();
+  if(!value){ toast('발견한 가치를 입력해 주세요.'); return; }
+  var res = await api('saveLesson1Lotus', { studentCode: Session.studentCode, mode:'addPetal', value:value, reason:reason });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  Draft.clear('l1petal');
+  _lotus.values = res.lotusValues;
+  renderLotusScreen();
+};
+
+App.editPetalPrompt = async function(idx){
+  var current = _lotus.values[idx];
+  var newValue = prompt('가치 수정 (최대 10자)', current);
+  if(newValue === null) return;
+  if(newValue.trim() === ''){
+    if(!confirm('이 꽃잎을 삭제할까요?')) return;
+    var res = await api('saveLesson1Lotus', { studentCode: Session.studentCode, mode:'deletePetal', index: idx });
+    if(!res.ok){ toast(res.error||'삭제하지 못했어요.'); return; }
+    _lotus.values = res.lotusValues; renderLotusScreen();
+    return;
+  }
+  var newReason = prompt('까닭 수정 (최대 60자)', '') || '';
+  var res2 = await api('saveLesson1Lotus', { studentCode: Session.studentCode, mode:'editPetal', index: idx, value:newValue.slice(0,10), reason:newReason.slice(0,60) });
+  if(!res2.ok){ toast(res2.error||'수정하지 못했어요.'); return; }
+  _lotus.values = res2.lotusValues; renderLotusScreen();
+};
+
+App.completeLotus = async function(){
+  var gen = document.getElementById('lotus-gen').value.trim();
+  if(!gen){ toast('연꽃의 마음을 적어 주세요.'); return; }
+  var res = await api('saveLesson1Lotus', { studentCode: Session.studentCode, mode:'complete', generalization: gen });
+  if(!res.ok){ toast(res.error||'완성하지 못했어요.'); return; }
+  Draft.clear('l1lotusGen');
+  _lotus.generalization = gen;
+  go('/student/lesson1/complete');
+};
+
+route('/student/lesson1/complete', function(){
+  setApp(
+    '<div class="top-brand"><h1>나의 단청 연꽃</h1></div>' +
+    '<div class="card center">' +
+      '<div class="lotus-visual">🌸</div>' +
+      '<p><strong>꽃잎:</strong> ' + _lotus.values.map(escapeHtml).join(' / ') + '</p>' +
+      '<p style="margin-top:10px;">"' + escapeHtml(_lotus.generalization) + '"</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/home\')">1차시 마치기</button>' +
+    '</div>'
+  );
+});
+</script>
+<script>
+/* =========================================================
+   3단계: 교사 연구실 기본 뼈대 (31~34번)
+   ========================================================= */
+
+var _teacherDashboard = null;
+
+function requireTeacherSession(){
+  if(!Session.teacherClassCode || !Session.teacherToken){ go('/'); return false; }
+  return true;
+}
+
+async function fetchTeacherDashboard(){
+  var res = await api('getTeacherDashboard', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken });
+  if(res.authExpired){ Session.clearTeacher(); go('/'); return null; }
+  return res;
+}
+
+route('/teacher/home', async function(){
+  if(!requireTeacherSession()) return;
+  setApp(loadingHtml());
+  var res = await fetchTeacherDashboard();
+  if(!res) return;
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  _teacherDashboard = res;
+  setApp(
+    '<div class="top-brand"><h1>교사 연구실</h1></div>' +
+    '<div class="card center">' +
+      '<h2>' + escapeHtml(res.classInfo.classCode) + ' — 우리 반 탐구 현황</h2>' +
+      '<p>1차시 완료 <strong>' + res.summary.lesson1Done + '/' + res.summary.total + '</strong> · ' +
+         '2차시 완료 <strong>' + res.summary.lesson2Done + '/' + res.summary.total + '</strong></p>' +
+    '</div>' +
+    '<div class="menu-grid">' +
+      '<div class="menu-tile" onclick="go(\'/teacher/progress\')"><span class="fe">①</span>진행 현황</div>' +
+      '<div class="menu-tile" onclick="go(\'/teacher/records\')"><span class="fe">②</span>학생 기록</div>' +
+      '<div class="menu-tile" onclick="go(\'/teacher/values\')"><span class="fe">③</span>연꽃 가치</div>' +
+      '<div class="menu-tile" onclick="go(\'/teacher/changes\')"><span class="fe">④</span>수업 전후 변화</div>' +
+      '<div class="menu-tile" onclick="go(\'/teacher/settings\')" style="grid-column:1/3;"><span class="fe">⑤</span>학급 설정</div>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="Session.clearTeacher(); go(\'/\')">로그아웃</button></div>'
+  );
+});
+
+route('/teacher/progress', async function(){
+  if(!requireTeacherSession()) return;
+  setApp(loadingHtml());
+  var res = await fetchTeacherDashboard();
+  if(!res) return;
+  var rows = res.progress.map(function(p){
+    var l1mark = p.lesson1Status === 'lotus_done' ? '✓' : (p.lesson1Status === 'not_started' ? '-' : '진행 중');
+    var lotusMark = p.lesson1Status === 'lotus_done' ? '🌸' : '-';
+    var l2mark = p.lesson2Status === 'final_done' ? '✓' : (p.lesson2Status === 'not_started' ? '-' : '진행 중');
+    var finalMark = p.lesson2Status === 'final_done' ? '✓' : '-';
+    return '<tr title="1차시: ' + escapeHtml(p.lesson1Label) + ' / 2차시: ' + escapeHtml(p.lesson2Label) + '">' +
+      '<td>' + escapeHtml(String(p.studentNumber)) + '</td>' +
+      '<td>' + l1mark + '</td><td>' + lotusMark + '</td><td>' + l2mark + '</td><td>' + finalMark + '</td>' +
+    '</tr>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h2>① 진행 현황</h2></div>' +
+    '<div class="card">' +
+      '<table><thead><tr><th>번호</th><th>1차시</th><th>연꽃</th><th>2차시</th><th>최종</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>' +
+      '<p class="muted" style="margin-top:10px;">행에 마우스를 올리면(또는 길게 누르면) 세부 진행 단계를 볼 수 있어요.</p>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
+  );
+});
+</script>
+<script>
+/* =========================================================
+   4단계: 2차시 전체 플로우 (20~28번)
+   ========================================================= */
+
+// ---------- STEP 1: 지난 시간의 나 (20번) ----------
+
+route('/student/lesson2/step1', async function(){
+  setApp(loadingHtml());
+  var res = await api('getFinalResult', { studentCode: Session.studentCode });
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  setApp(
+    '<div class="top-brand"><h2>「지난 시간의 나」</h2></div>' +
+    '<div class="card">' +
+      '<h3>수업 전의 나</h3><p>"' + escapeHtml(res.pre.concept||'') + '"</p>' +
+      '<h3>내가 피운 단청 연꽃</h3>' +
+      '<div class="lotus-visual">🌸</div>' +
+      '<p style="text-align:center;">' + (res.lotusValues||[]).map(escapeHtml).join(' · ') + '</p>' +
+      '<h3>1차시 후 나의 생각</h3><p>"' + escapeHtml(res.lesson1Generalization||'') + '"</p>' +
+      '<div class="lock-note" style="margin-top:14px;">처음의 나와 지금의 나는 무엇이 달라졌나요? — <strong>짝과 이야기해 보세요.</strong></div>' +
+      '<button class="btn btn-main" onclick="App.goLesson2Step2()">다음</button>' +
+    '</div>'
+  );
+});
+
+App.goLesson2Step2 = async function(){
+  var res = await api('saveLesson2Step1', { studentCode: Session.studentCode });
+  if(!res.ok){ toast(res.error||'처리하지 못했어요.'); return; }
+  go('/student/lesson2/step2');
+};
+
+// ---------- STEP 2: 100년 뒤까지 이어주고 싶은 가치 (21번) ----------
+
+var _selectedFuture = [];
+
+route('/student/lesson2/step2', async function(){
+  setApp(loadingHtml());
+  await loadLotusState();
+  _selectedFuture = [];
+  var draft = Draft.load('l2futureReason') || {};
+  var picks = _lotus.values.map(function(v,idx){
+    return '<span class="value-pick" id="fut-pick-'+idx+'" onclick="App.toggleFuturePick('+idx+',\''+escapeHtml(v).replace(/'/g,"\\'")+'\')">🌸 ' + escapeHtml(v) + '</span>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h2>「100년 뒤까지 이어주고 싶은 가치」</h2></div>' +
+    '<div class="card">' +
+      '<p>내가 발견한 가치 중 100년 뒤까지 꼭 이어주고 싶은 가치를 <strong>2개</strong> 골라보세요.</p>' +
+      '<div id="future-picks">' + picks + '</div>' +
+      '<label class="field-label" style="margin-top:16px;">왜 이 가치를 꼭 이어주고 싶나요?</label>' +
+      '<textarea id="future-reason" maxlength="300">' + escapeHtml(draft.text||'') + '</textarea>' +
+      '<button class="btn btn-main" onclick="App.saveFutureValue()">나의 선택 저장</button>' +
+    '</div>'
+  );
+  document.getElementById('future-reason').addEventListener('input', Draft.debounced('l2futureReason', function(){
+    return { text: document.getElementById('future-reason').value };
+  }));
+});
+
+App.toggleFuturePick = function(idx, value){
+  var el = document.getElementById('fut-pick-'+idx);
+  var pos = _selectedFuture.indexOf(value);
+  if(pos !== -1){
+    _selectedFuture.splice(pos,1); el.classList.remove('selected');
+  } else {
+    if(_selectedFuture.length >= 2){ toast('가치는 2개까지만 선택할 수 있어요.'); return; }
+    _selectedFuture.push(value); el.classList.add('selected');
+  }
+};
+
+App.saveFutureValue = async function(){
+  if(_selectedFuture.length !== 2){ toast('가치를 정확히 2개 선택해 주세요.'); return; }
+  var reason = document.getElementById('future-reason').value.trim();
+  var res = await api('saveLesson2FutureValue', { studentCode: Session.studentCode, selectedFutureValues: _selectedFuture, futureValueReason: reason });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  Draft.clear('l2futureReason');
+  go('/student/lesson2/interstitial');
+};
+
+route('/student/lesson2/interstitial', function(){
+  setApp(
+    '<div class="card center" style="margin-top:60px;">' +
+      '<div style="font-size:3rem;">🤝</div>' +
+      '<h2>나의 선택을 저장했어요.</h2>' +
+      '<p class="muted">이제 친구들의 선택을 만나볼 시간이에요.</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/home\')">홈으로</button>' +
+    '</div>'
+  );
+});
+
+// ---------- STEP 3: 새 꽃잎 + 사후 설문 + 최종 생각 (24~28번) ----------
+
+var _addPetalMode = null; // 'add' | 'keep' | null
+
+route('/student/lesson2/step3', async function(){
+  setApp(loadingHtml());
+  await loadLotusState();
+  _addPetalMode = null;
+  renderLesson2Step3();
+});
+
+function renderLesson2Step3(){
+  var petalDraft = Draft.load('l2addedPetal') || {};
+  var finalDraft = Draft.load('l2finalConcept') || {};
+  var petals = _lotus.values.map(function(v){ return '<span class="petal-chip">🌸 ' + escapeHtml(v) + '</span>'; }).join('');
+
+  var addFormHtml = _addPetalMode === 'add' ?
+    '<div style="margin-top:12px;">' +
+      '<label class="field-label">새롭게 발견한 가치</label>' +
+      '<input type="text" id="added-value" maxlength="10" value="' + escapeHtml(petalDraft.value||'') + '" />' +
+      '<label class="field-label">왜 새롭게 중요하다고 생각했나요?</label>' +
+      '<textarea id="added-reason" maxlength="300">' + escapeHtml(petalDraft.reason||'') + '</textarea>' +
+    '</div>' : '';
+
+  setApp(
+    '<div class="top-brand"><h2>새롭게 피어난 생각</h2></div>' +
+    '<div class="card">' +
+      '<h3>1차시의 나의 연꽃</h3>' +
+      '<div class="petal-list">' + petals + '</div>' +
+      '<p style="margin-top:10px;">수업을 마친 지금, 새롭게 중요하다고 생각하게 된 가치가 있나요?</p>' +
+      '<div class="row">' +
+        '<button class="btn btn-secondary" onclick="App.setAddPetalMode(\'add\')">＋ 새로운 꽃잎 피우기</button>' +
+        '<button class="btn btn-secondary" onclick="App.setAddPetalMode(\'keep\')">지금의 연꽃 그대로 두기</button>' +
+      '</div>' +
+      '<div id="add-petal-area">' + addFormHtml + '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>나는 이제 단청에 대해 얼마나 설명할 수 있나요?</h3>' +
+      scaleRowHtml('post-understanding', null, '아직 어려워요', '잘 설명할 수 있어요') +
+      '<h3 style="margin-top:20px;">수업 후 단청을 더 알아보고 싶은 마음은 어느 정도인가요?</h3>' +
+      scaleRowHtml('post-interest', null, '별로 궁금하지 않아요', '매우 궁금해요') +
+      '<label class="field-label" style="margin-top:20px;">지금 나에게 단청을 잇는다는 것은 무엇인가요?</label>' +
+      '<textarea id="final-concept" maxlength="200">' + escapeHtml(finalDraft.text || '') + '</textarea>' +
+      '<div class="char-count" id="final-concept-count"></div>' +
+      '<button class="btn btn-main" onclick="App.saveLesson2Final()">나의 이음 기록 완성하기</button>' +
+    '</div>'
+  );
+  bindCounter('final-concept','final-concept-count',200);
+  document.getElementById('final-concept').addEventListener('input', Draft.debounced('l2finalConcept', function(){
+    return { text: document.getElementById('final-concept').value };
+  }));
+  if(_addPetalMode === 'add'){
+    var savePetal = Draft.debounced('l2addedPetal', function(){
+      return { value: document.getElementById('added-value').value, reason: document.getElementById('added-reason').value };
+    });
+    document.getElementById('added-value').addEventListener('input', savePetal);
+    document.getElementById('added-reason').addEventListener('input', savePetal);
+  }
+}
+
+App.setAddPetalMode = function(mode){
+  _addPetalMode = mode;
+  if(mode === 'keep') Draft.clear('l2addedPetal');
+  renderLesson2Step3();
+};
+
+App.saveLesson2Final = async function(){
+  var postU = document.getElementById('post-understanding').value;
+  var postI = document.getElementById('post-interest').value;
+  var finalConcept = document.getElementById('final-concept').value.trim();
+  if(!postU || !postI || !finalConcept){ toast('모든 항목을 입력해 주세요.'); return; }
+  var payload = { studentCode: Session.studentCode, postUnderstanding: postU, postInterest: postI, finalConcept: finalConcept };
+  if(_addPetalMode === 'add'){
+    var av = document.getElementById('added-value').value.trim();
+    var ar = document.getElementById('added-reason').value.trim();
+    if(av){ payload.addedValue = av; payload.addedValueReason = ar; }
+  }
+  var res = await api('saveLesson2Final', payload);
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  Draft.clear('l2addedPetal'); Draft.clear('l2finalConcept');
+  go('/student/final');
+};
+</script>
+<script>
+/* =========================================================
+   5단계: 학생 최종 결과 + 연꽃밭 (29~30번)
+   ========================================================= */
+
+function starRow(val){
+  val = Number(val)||0;
+  var s = '';
+  for(var i=1;i<=5;i++) s += (i<=val ? '★' : '☆');
+  return s;
+}
+
+route('/student/final', async function(){
+  setApp(loadingHtml());
+  var res = await api('getFinalResult', { studentCode: Session.studentCode });
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  var post = res.post;
+  var uDiff = post ? Number(post.understanding) - Number(res.pre.understanding) : null;
+  var iDiff = post ? Number(post.interest) - Number(res.pre.interest) : null;
+
+  setApp(
+    '<div class="top-brand"><h1>「나의 단청 이음 기록」</h1></div>' +
+    '<div class="card">' +
+      '<h3>처음의 나</h3>' +
+      '<p>이해도 ' + starRow(res.pre.understanding) + ' (' + res.pre.understanding + ') · 관심도 ' + starRow(res.pre.interest) + ' (' + res.pre.interest + ')</p>' +
+      '<p>"' + escapeHtml(res.pre.concept||'') + '"</p>' +
+    '</div>' +
+    '<div class="center" style="font-size:1.4rem; color:var(--gold);">↓</div>' +
+    '<div class="card">' +
+      '<h3>탐구하며 피운 가치</h3>' +
+      '<div class="petal-list">' + (res.lotusValues||[]).map(function(v){ return '<span class="petal-chip">🌸 '+escapeHtml(v)+'</span>'; }).join('') + '</div>' +
+    '</div>' +
+    (res.addedValue ?
+      '<div class="center" style="font-size:1.4rem; color:var(--gold);">↓</div>' +
+      '<div class="card"><h3>새롭게 피어난 가치</h3><span class="petal-chip new">🌸 ' + escapeHtml(res.addedValue) + '</span></div>'
+      : '') +
+    (post ?
+      '<div class="center" style="font-size:1.4rem; color:var(--gold);">↓</div>' +
+      '<div class="card">' +
+        '<h3>지금의 나</h3>' +
+        '<p>이해도 ' + starRow(post.understanding) + ' (' + post.understanding + (uDiff!=null?', +'+uDiff:'') + ') · ' +
+           '관심도 ' + starRow(post.interest) + ' (' + post.interest + (iDiff!=null?', +'+iDiff:'') + ')</p>' +
+        '<p>"' + escapeHtml(post.concept||'') + '"</p>' +
+      '</div>' : '') +
+    '<button class="btn btn-main" onclick="go(\'/garden\')">🌷 우리 반 연꽃밭 보기</button>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/student/home\')">홈으로</button></div>'
+  );
+});
+
+route('/garden', async function(){
+  setApp(loadingHtml());
+  var res = await api('getClassGarden', { classCode: Session.classCode });
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error||'불러오지 못했어요.') + '</p></div>'); return; }
+  window._gardenFlowers = res.flowers || [];
+  var tiles = window._gardenFlowers.map(function(f, idx){
+    return '<div class="flower-tile" onclick="App.showFlower(' + idx + ')"><div class="fe">🌸</div><div class="muted">' + f.lotusValues.length + '개 가치</div></div>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h1>🌷 우리 반 단청 이음 연꽃밭</h1><p class="muted">이름과 번호는 공개되지 않아요.</p></div>' +
+    '<div class="card"><div class="flower-grid">' + (tiles || '<p class="muted">아직 핀 연꽃이 없어요.</p>') + '</div></div>' +
+    '<div id="flower-detail"></div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="history.back()">← 이전으로</button></div>'
+  );
+});
+
+App.showFlower = function(idx){
+  var f = window._gardenFlowers[idx];
+  document.getElementById('flower-detail').innerHTML =
+    '<div class="card">' +
+      '<h3>🌸 발견한 가치</h3><p>' + f.lotusValues.map(escapeHtml).join(' · ') + '</p>' +
+      '<h3>마지막 생각</h3><p>"' + escapeHtml(f.finalThought||'') + '"</p>' +
+    '</div>';
+  document.getElementById('flower-detail').scrollIntoView({behavior:'smooth'});
+};
+</script>
+<script>
+/* =========================================================
+   6단계: 교사 연구실 나머지 메뉴 (35~39번)
+   ========================================================= */
+
+// ---------- 35. 학생 기록 ----------
+
+route('/teacher/records', async function(query){
+  if(!requireTeacherSession()) return;
+  if(query && query.code){
+    setApp(loadingHtml());
+    var rec = await api('getStudentRecord', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, studentCode: query.code });
+    if(rec.authExpired){ Session.clearTeacher(); go('/'); return; }
+    if(!rec.ok){ setApp('<div class="card center"><p>' + escapeHtml(rec.error) + '</p></div>'); return; }
+    setApp(
+      '<div class="top-brand"><h2>② 학생 기록 · ' + escapeHtml(rec.studentCode) + '</h2></div>' +
+      '<div class="card">' +
+        '<h3>사전 이해도 / 관심도</h3><p>' + escapeHtml(rec.preUnderstanding) + ' / ' + escapeHtml(rec.preInterest) + '</p>' +
+        '<h3>처음 생각</h3><p>' + escapeHtml(rec.preConcept) + '</p>' +
+        '<h3>벗겨보기 선택 / 이유</h3><p>' + escapeHtml(rec.removedElementChoice) + ' — ' + escapeHtml(rec.removedElementReason) + '</p>' +
+        '<h3>연꽃 가치</h3><p>' + rec.lotusValues.map(escapeHtml).join(' · ') + '</p>' +
+        '<h3>연꽃 가치 이유</h3><p>' + rec.lotusReasons.map(escapeHtml).join(' / ') + '</p>' +
+        '<h3>연꽃의 마음</h3><p>' + escapeHtml(rec.lesson1Generalization) + '</p>' +
+        '<h3>100년 뒤 선택 가치 / 이유</h3><p>' + rec.selectedFutureValues.map(escapeHtml).join(' · ') + ' — ' + escapeHtml(rec.futureValueReason) + '</p>' +
+        '<h3>새롭게 추가한 가치</h3><p>' + escapeHtml(rec.addedValue) + ' — ' + escapeHtml(rec.addedValueReason) + '</p>' +
+        '<h3>사후 이해도 / 관심도</h3><p>' + escapeHtml(rec.postUnderstanding) + ' / ' + escapeHtml(rec.postInterest) + '</p>' +
+        '<h3>최종 생각</h3><p>' + escapeHtml(rec.finalConcept) + '</p>' +
+      '</div>' +
+      '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/records\')">← 학생 목록으로</button></div>'
+    );
+    return;
+  }
+  setApp(loadingHtml());
+  var res = await fetchTeacherDashboard();
+  if(!res) return;
+  var rows = res.progress.map(function(p){
+    return '<div class="menu-tile" onclick="go(\'/teacher/records?code=' + encodeURIComponent(p.studentCode) + '\')">' + p.studentNumber + '번</div>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h2>② 학생 기록</h2><p class="muted">학생 번호를 눌러 개인 기록을 확인하세요.</p></div>' +
+    '<div class="menu-grid">' + rows + '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
+  );
+});
+
+// ---------- 36. 연꽃 가치 ----------
+
+function barListHtml(items){
+  if(!items.length) return '<p class="muted">데이터가 없어요.</p>';
+  var max = items[0].count || 1;
+  return items.map(function(it){
+    var pct = Math.max(8, Math.round((it.count/max)*100));
+    return '<div style="margin:8px 0;"><div style="display:flex; justify-content:space-between;"><span>' + escapeHtml(it.value) + '</span><span>' + it.count + '</span></div>' +
+      '<div style="background:#eee; border-radius:8px; height:10px;"><div style="width:'+pct+'%; background:var(--gold); height:10px; border-radius:8px;"></div></div></div>';
+  }).join('');
+}
+
+route('/teacher/values', async function(){
+  if(!requireTeacherSession()) return;
+  setApp(loadingHtml());
+  var res = await api('getClassValueStats', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken });
+  if(res.authExpired){ Session.clearTeacher(); go('/'); return; }
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  setApp(
+    '<div class="top-brand"><h2>③ 연꽃 가치</h2></div>' +
+    '<div class="card"><h3>1차시 많이 발견한 가치</h3>' + barListHtml(res.lesson1Values) + '</div>' +
+    '<div class="card"><h3>2차시 후 새롭게 등장한 가치</h3>' + barListHtml(res.lesson2NewValues) + '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
+  );
+});
+
+// ---------- 37. 수업 전후 변화 ----------
+
+route('/teacher/changes', async function(){
+  if(!requireTeacherSession()) return;
+  setApp(loadingHtml());
+  var res = await api('getClassChangeStats', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken });
+  if(res.authExpired){ Session.clearTeacher(); go('/'); return; }
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  var u = res.understanding, i = res.interest;
+  var compares = res.compares.map(function(c){
+    return '<div class="card"><div class="compare-box"><div><strong>처음</strong><br>' + escapeHtml(c.preConcept) + '</div>' +
+      '<div class="arrow">→</div><div><strong>마지막</strong><br>' + escapeHtml(c.finalConcept) + '</div></div></div>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h2>④ 수업 전후 변화</h2></div>' +
+    '<div class="card">' +
+      '<h3>이해도</h3><p>수업 전 평균 ' + u.pre + ' → 수업 후 평균 ' + u.post + ' (+' + Math.round((u.post-u.pre)*10)/10 + ')</p>' +
+      '<div style="background:#eee; border-radius:8px; height:14px;"><div style="width:' + (u.post/5*100) + '%; background:var(--blue); height:14px; border-radius:8px;"></div></div>' +
+      '<h3 style="margin-top:16px;">관심도</h3><p>수업 전 평균 ' + i.pre + ' → 수업 후 평균 ' + i.post + ' (+' + Math.round((i.post-i.pre)*10)/10 + ')</p>' +
+      '<div style="background:#eee; border-radius:8px; height:14px;"><div style="width:' + (i.post/5*100) + '%; background:var(--green); height:14px; border-radius:8px;"></div></div>' +
+    '</div>' +
+    '<h3 style="margin:16px 4px;">처음 생각 ↔ 마지막 생각</h3>' +
+    (compares || '<p class="muted">아직 비교할 데이터가 없어요.</p>') +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
+  );
+});
+
+// ---------- 38. 학급 설정 / 39. 데이터 내려받기 ----------
+
+route('/teacher/settings', async function(){
+  if(!requireTeacherSession()) return;
+  setApp(loadingHtml());
+  var res = await fetchTeacherDashboard();
+  if(!res) return;
+  var ci = res.classInfo;
+  var studentOptions = res.progress.map(function(p){
+    return '<option value="' + escapeHtml(p.studentCode) + '">' + p.studentNumber + '번 (' + escapeHtml(p.studentCode) + ')</option>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h2>⑤ 학급 설정</h2></div>' +
+    '<div class="card">' +
+      '<label class="field-label">학급명(학교 이름)</label>' +
+      '<input type="text" id="set-school" value="' + escapeHtml(ci.schoolName) + '" />' +
+      '<button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="App.updateSchoolName()">저장</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label class="field-label">학생 수 (현재 ' + ci.studentCount + '명)</label>' +
+      '<input type="number" id="set-count" value="' + ci.studentCount + '" min="1" max="40" />' +
+      '<button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="App.updateStudentCount()">저장</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label class="field-label">2차시 열기 / 잠그기</label>' +
+      '<button class="btn ' + (ci.lesson2Unlocked?'btn-main':'btn-secondary') + '" onclick="App.toggleLesson2(' + (!ci.lesson2Unlocked) + ')">' +
+        (ci.lesson2Unlocked ? '🔓 열려 있음 (누르면 잠그기)' : '🔒 잠겨 있음 (누르면 열기)') + '</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label class="field-label">관리번호 변경</label>' +
+      '<input type="tel" id="set-cur-pin" maxlength="4" placeholder="현재 관리번호" />' +
+      '<input type="tel" id="set-new-pin" maxlength="4" placeholder="새 관리번호" style="margin-top:8px;" />' +
+      '<button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="App.changePin()">변경</button>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label class="field-label">학생 기록 초기화</label>' +
+      '<p class="muted">되돌릴 수 없어요. 신중히 선택해 주세요.</p>' +
+      '<button class="btn btn-danger" onclick="App.resetAll()">학급 전체 초기화 (새 학기 재사용)</button>' +
+      '<div style="margin-top:10px;">' +
+        '<select id="set-reset-student">' + studentOptions + '</select>' +
+        '<button class="btn btn-danger btn-small" style="margin-top:8px;" onclick="App.resetSingle()">선택한 학생만 초기화</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<label class="field-label">학급 데이터 내려받기</label>' +
+      '<button class="btn btn-main" onclick="App.downloadCsv()">학급 기록 내려받기 (CSV)</button>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
+  );
+});
+
+App.updateSchoolName = async function(){
+  var v = document.getElementById('set-school').value.trim();
+  var res = await api('updateClassSettings', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, schoolName: v });
+  toast(res.ok ? '저장했어요.' : (res.error||'저장하지 못했어요.'));
+};
+
+App.updateStudentCount = async function(confirmReduce){
+  var v = document.getElementById('set-count').value;
+  var res = await api('updateClassSettings', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, studentCount: v, confirmReduce: !!confirmReduce });
+  if(res.needsConfirm){
+    var names = res.affectedStudents.join(', ');
+    if(confirm(names + ' 학생은 기록이 있습니다. 정말 삭제할까요? (30일간 복구 가능)')){
+      App.updateStudentCount(true);
+    }
+    return;
+  }
+  toast(res.ok ? '학생 수를 변경했어요.' : (res.error||'변경하지 못했어요.'));
+  if(res.ok) go('/teacher/settings');
+};
+
+App.toggleLesson2 = async function(nextVal){
+  var res = await api('updateClassSettings', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, lesson2Unlocked: nextVal });
+  toast(res.ok ? (nextVal ? '2차시를 열었어요.' : '2차시를 잠갔어요.') : (res.error||'변경하지 못했어요.'));
+  if(res.ok) go('/teacher/settings');
+};
+
+App.changePin = async function(){
+  var cur = document.getElementById('set-cur-pin').value.trim();
+  var next = document.getElementById('set-new-pin').value.trim();
+  var res = await api('updateClassSettings', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, currentPIN: cur, newPIN: next });
+  toast(res.ok ? '관리번호를 변경했어요.' : (res.error||'변경하지 못했어요.'));
+};
+
+App.resetAll = async function(){
+  if(!confirm('학급 전체 기록을 초기화합니다. 이 작업은 되돌릴 수 없어요. 계속할까요?')) return;
+  var res = await api('resetStudentRecord', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, scope:'all' });
+  toast(res.ok ? '전체 초기화를 완료했어요.' : (res.error||'초기화하지 못했어요.'));
+};
+
+App.resetSingle = async function(){
+  var code = document.getElementById('set-reset-student').value;
+  if(!confirm(code + ' 학생의 기록만 초기화합니다. 이 작업은 되돌릴 수 없어요. 계속할까요?')) return;
+  var res = await api('resetStudentRecord', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, scope:'single', studentCode: code });
+  toast(res.ok ? '해당 학생 기록을 초기화했어요.' : (res.error||'초기화하지 못했어요.'));
+};
+
+App.downloadCsv = async function(){
+  var res = await api('exportClassData', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken });
+  if(!res.ok){ toast(res.error||'내려받지 못했어요.'); return; }
+  var blob = new Blob(['﻿' + res.csv], { type:'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = res.filename || 'class_export.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+</script>
+<!-- SCRIPT_INSERT_POINT -->
+</body>
+</html>
