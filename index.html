@@ -110,14 +110,53 @@
     position:fixed; top:16px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
     padding:10px 18px; border-radius:30px; font-size:0.9rem; z-index:100; opacity:0.95;
   }
-  .diff-layer{position:relative; width:100%; aspect-ratio:4/3; border-radius:16px; overflow:hidden; margin:14px 0; background:#efe6d3;}
-  .diff-layer svg{width:100%; height:100%; display:block;}
-  .toggle-row{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0;}
-  .toggle-btn{
-    flex:1; min-width:70px; padding:10px 4px; border-radius:12px; border:2px solid var(--line);
-    background:#fff; text-align:center; font-weight:700; cursor:pointer; font-size:0.85rem;
+  /* ---- 1차시 STEP2: 단청 관찰(단청을 벗겨 보자) ---- */
+  .dancheong-observation{
+    width:min(100%, 420px); margin:0 auto; background:#fff; border:1px solid var(--line);
+    border-radius:16px; padding:10px;
   }
-  .toggle-btn.off{opacity:0.45; border-color:#ccc;}
+  .dancheong-observation svg{ display:block; width:100%; height:auto; aspect-ratio:1/1; }
+  .element-toggle-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:14px 0; }
+  @media (min-width:480px){ .element-toggle-grid{ grid-template-columns:repeat(4,1fr); } }
+  .element-toggle{
+    min-height:48px; border-radius:14px; border:2px solid var(--line); background:#f2f2f2;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    cursor:pointer; font-family:inherit; padding:8px 4px;
+    transition:background-color .3s ease, border-color .3s ease, color .3s ease;
+  }
+  .element-toggle .toggle-icon{ font-size:1.3rem; }
+  .element-toggle .toggle-label{ font-weight:700; font-size:0.85rem; }
+  .element-toggle .toggle-state{ font-size:0.72rem; font-weight:700; letter-spacing:.04em; }
+  .element-toggle.is-on[data-element="color"]{ background:#fdeee0; border-color:var(--gold); color:#8a5a12; }
+  .element-toggle.is-on[data-element="pattern"]{ background:#e7f0fa; border-color:var(--blue); color:#1f4560; }
+  .element-toggle.is-on[data-element="repetition"]{ background:#eef4ea; border-color:var(--green); color:#3f5a34; }
+  .element-toggle.is-on[data-element="symmetry"]{ background:#fbe6e2; border-color:var(--red); color:#8f2c22; }
+  .element-toggle.is-off{ background:#f0f0f0; border-color:#ccc; color:#888; }
+  .dc-live-region{
+    margin-top:10px; font-size:0.88rem; color:var(--ink-soft); background:#f6f1e4;
+    border-radius:10px; padding:10px 12px; min-height:20px;
+  }
+  .dc-live-region ul{ margin:0; padding-left:18px; }
+  .dc-live-region p{ margin:0; }
+  #dancheong-svg .petal-shape, #dancheong-svg .center-dot, #dancheong-svg .asym-shape{
+    transition:opacity .4s ease, transform .4s ease;
+  }
+  #dancheong-svg #flower-artwork{ transition:filter .4s ease; }
+  #dancheong-svg #plain-pattern-layer{ transition:opacity .4s ease; opacity:0; }
+  #dancheong-svg.pattern-off #plain-pattern-layer{ opacity:1; }
+  #dancheong-svg.pattern-off #outer-blue-petals,
+  #dancheong-svg.pattern-off #middle-teal-petals,
+  #dancheong-svg.pattern-off #inner-pink-petals,
+  #dancheong-svg.pattern-off #cream-backing,
+  #dancheong-svg.pattern-off #flower-center .center-dot{ opacity:0; }
+  #dancheong-svg.color-off #flower-artwork{ filter:grayscale(1); }
+  #dancheong-svg.repetition-off .repeat-extra{ opacity:0; }
+  #dancheong-svg.symmetry-off .symmetry-target{ opacity:0; }
+  #dancheong-svg #asymmetric-layer{ opacity:0; pointer-events:none; transition:opacity .4s ease; }
+  #dancheong-svg.symmetry-off #asymmetric-layer{ opacity:1; }
+  @media (prefers-reduced-motion: reduce){
+    #dancheong-svg *{ transition:none !important; }
+  }
   .footnote{font-size:0.75rem; color:var(--ink-soft); text-align:center; margin-top:24px;}
   .lock-note{background:#f3ede0; border-radius:12px; padding:12px 14px; font-size:0.85rem; color:var(--ink-soft);}
   a{color:var(--blue);}
@@ -621,47 +660,240 @@ route('/student/lesson1/saved', function(){
   );
 });
 
-// ---------- STEP 2: 단청을 벗겨 보자 ----------
+// ---------- STEP 2: 단청을 벗겨 보자 (조형 요소 관찰) ----------
+//
+// 단청 문양(dancheong_flower_blue_pink.svg 참고 구성: 바깥쪽 청색 꽃잎 8개 /
+// 중간 청록색 꽃잎 8개 / 안쪽 분홍색 꽃잎 8개 / 중앙 청색 원 / 중앙을 둘러싼
+// 노란 점 장식 / 투명 배경 / 방사형 반복·대칭 구조)을 SVG로 직접 구성한다.
+// SVG는 화면 진입 시 한 번만 생성하고, 이후 ON/OFF 전환은 <svg> 루트에
+// class(color-off/pattern-off/repetition-off/symmetry-off)만 토글해서 처리한다.
 
-var _diffLayers = { color:true, pattern:true, repeat:true, symmetry:true };
+var dancheongLayerState = {
+  color: true,
+  pattern: true,
+  repetition: true,
+  symmetry: true
+};
 
-function dancheongSvg(){
-  return '<svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">' +
-    '<rect width="200" height="150" fill="#efe6d3"/>' +
-    '<g id="layer-repeat" opacity="' + (_diffLayers.repeat?1:0) + '">' +
-      '<rect x="10" y="10" width="30" height="130" fill="#d8c9a3"/>' +
-      '<rect x="160" y="10" width="30" height="130" fill="#d8c9a3"/>' +
+// 첨부된 dancheong_flower_blue_pink.svg(참고 이미지)를 실측(색상/반지름/각도)해서
+// 옮긴 값. 바깥 청색 꽃잎은 0/45/90...(8방향), 중간 청록 꽃잎은 그 사이사이인
+// 22.5/67.5/112.5...(8방향)에 놓여 서로 어긋나 있고, 안쪽 분홍 꽃잎은 다시 바깥
+// 청색과 같은 각도(0/45/90...)에 자리한다. 분홍 꽃잎 바로 아래에는 살짝 더 큰
+// 같은 모양의 미색(cream) 꽃잎을 겹쳐 그려 테두리처럼 보이게 한다.
+var DC_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315]; // 기준 8방향 (0=위쪽)
+// halfAngle은 각 꽃잎이 "가장 넓어지는 지점"의 반각(半角)이고, wideFrac은 그
+// 지점이 밑동(baseR)과 끝(tipR) 사이 어디쯤인지를 나타낸다. 실측 결과 네 겹
+// 모두 밑동 바로 근처에서 가장 넓고(wideFrac이 0에 가까움) 끝으로 갈수록
+// 뾰족하게 좁아지는 "잎/불꽃" 모양이었다.
+var DC_RING_DEFS = {
+  outer:  { baseR: 58, tipR: 88, halfAngle: 30, wideFrac: 0.06, angleOffset: 0,    color: '#557fc0', targetBase: 45 },
+  middle: { baseR: 36, tipR: 77, halfAngle: 11, wideFrac: 0.33, angleOffset: 22.5, color: '#2caaa6', targetBase: 45 },
+  inner:  { baseR: 36, tipR: 56, halfAngle: 23, wideFrac: 0.05, angleOffset: 0,    color: '#f3b4bc' },
+  cream:  { baseR: 28, tipR: 60, halfAngle: 30, wideFrac: 0.03, angleOffset: 0,    color: '#fff2e5' }
+};
+var DC_CENTER_COLOR = '#3479a7';
+var DC_CENTER_R = 31;
+var DC_DOT_COLOR = '#ffd044';
+var DC_DOT_RING_R = 17;
+var DC_DOT_R = 5;
+
+// 로컬 좌표계에서 "위쪽(0˚)"을 기준으로 한 극좌표 → 직교좌표 변환.
+function dcPolarPoint(r, angleDeg){
+  var rad = angleDeg * Math.PI / 180;
+  return (r * Math.sin(rad)).toFixed(2) + ',' + (-r * Math.cos(rad)).toFixed(2);
+}
+
+// 꽃잎 하나의 path(d)를 생성한다: 중심에서 baseR만큼 떨어진 뾰족한 밑동에서
+// 시작해 halfAngle 각도로 벌어지며 부풀었다가 tipR에서 뾰족하게 모인다.
+function dcPetalPath(baseR, tipR, halfAngle, wideFrac){
+  wideFrac = wideFrac === undefined ? 0.52 : wideFrac;
+  var wideR = baseR + (tipR - baseR) * wideFrac;
+  var base = dcPolarPoint(baseR, 0);
+  var tip = dcPolarPoint(tipR, 0);
+  var rightWide = dcPolarPoint(wideR, halfAngle);
+  var leftWide = dcPolarPoint(wideR, -halfAngle);
+  var c1 = dcPolarPoint(baseR + (wideR - baseR) * 0.7, halfAngle * 0.35);
+  var c2 = dcPolarPoint(wideR, halfAngle * 0.85);
+  var c3 = dcPolarPoint(wideR + (tipR - wideR) * 0.45, halfAngle * 0.5);
+  var c4 = dcPolarPoint(tipR, halfAngle * 0.08);
+  var c5 = dcPolarPoint(tipR, -halfAngle * 0.08);
+  var c6 = dcPolarPoint(wideR + (tipR - wideR) * 0.45, -halfAngle * 0.5);
+  var c7 = dcPolarPoint(wideR, -halfAngle * 0.85);
+  var c8 = dcPolarPoint(baseR + (wideR - baseR) * 0.7, -halfAngle * 0.35);
+  return 'M' + base +
+    ' C' + c1 + ' ' + c2 + ' ' + rightWide +
+    ' C' + c3 + ' ' + c4 + ' ' + tip +
+    ' C' + c5 + ' ' + c6 + ' ' + leftWide +
+    ' C' + c7 + ' ' + c8 + ' ' + base + ' Z';
+}
+
+var DC_PATH_OUTER = dcPetalPath(DC_RING_DEFS.outer.baseR, DC_RING_DEFS.outer.tipR, DC_RING_DEFS.outer.halfAngle, DC_RING_DEFS.outer.wideFrac);
+var DC_PATH_MIDDLE = dcPetalPath(DC_RING_DEFS.middle.baseR, DC_RING_DEFS.middle.tipR, DC_RING_DEFS.middle.halfAngle, DC_RING_DEFS.middle.wideFrac);
+var DC_PATH_INNER = dcPetalPath(DC_RING_DEFS.inner.baseR, DC_RING_DEFS.inner.tipR, DC_RING_DEFS.inner.halfAngle, DC_RING_DEFS.inner.wideFrac);
+var DC_PATH_CREAM = dcPetalPath(DC_RING_DEFS.cream.baseR, DC_RING_DEFS.cream.tipR, DC_RING_DEFS.cream.halfAngle, DC_RING_DEFS.cream.wideFrac);
+
+// 오른쪽 절반/왼쪽 절반/축(위·아래) 판정 — 각도가 45의 배수가 아닌 링(중간 청록)에도
+// 그대로 적용할 수 있도록 범위로 판정한다.
+function dcSymmetryClass(angle){
+  var a = ((angle % 360) + 360) % 360;
+  if(a === 0 || a === 180) return 'symmetry-axis';
+  return (a > 0 && a < 180) ? 'symmetry-right' : 'symmetry-left';
+}
+
+// 꽃잎 한 겹을 8방향으로 반복 배치한다. angleOffset을 더해 중간(청록) 겹처럼
+// 바깥 겹과 어긋난 위치에 놓을 수 있다. DC_ANGLES의 첫 번째(오프셋만 더한 것)만
+// "기본 꽃잎"으로 남기고 나머지 7개는 repeat-extra로 표시해, 반복 OFF일 때
+// 위쪽 방향 꽃잎 하나만 남도록 한다. targetBaseAngle이 주어지면 그 기준각의
+// 꽃잎에 symmetry-target 클래스를 추가해, 대칭 OFF일 때 이 원본 꽃잎을 숨기고
+// asymmetric-layer의 덧그림으로 "교체"되어 보이게 한다.
+function dcPetalRingMarkup(groupId, pathD, fillColor, angleOffset, targetBaseAngle){
+  angleOffset = angleOffset || 0;
+  var parts = ['<g id="' + groupId + '">'];
+  DC_ANGLES.forEach(function(baseAngle, idx){
+    var angle = baseAngle + angleOffset;
+    var extraClass = idx === 0 ? '' : ' repeat-extra';
+    var symClass = dcSymmetryClass(angle);
+    var targetClass = (targetBaseAngle !== undefined && baseAngle === targetBaseAngle) ? ' symmetry-target' : '';
+    parts.push(
+      '<g class="repeat-petal ' + symClass + extraClass + targetClass + '" transform="translate(100 100) rotate(' + angle + ')">' +
+        '<path class="petal-shape" d="' + pathD + '" fill="' + fillColor + '"/>' +
+      '</g>'
+    );
+  });
+  parts.push('</g>');
+  return parts.join('');
+}
+
+// 중앙을 둘러싼 노란 점 장식 8개 (반복 OFF 시 위쪽 1개만 남음)
+function dcCenterDotsMarkup(){
+  var parts = [];
+  DC_ANGLES.forEach(function(angle, idx){
+    var extraClass = idx === 0 ? '' : ' repeat-extra';
+    parts.push(
+      '<g class="center-dot' + extraClass + '" transform="translate(100 100) rotate(' + angle + ')">' +
+        '<circle cx="0" cy="-' + DC_DOT_RING_R + '" r="' + DC_DOT_R + '" fill="' + DC_DOT_COLOR + '"/>' +
+      '</g>'
+    );
+  });
+  return parts.join('');
+}
+
+// 대칭이 깨진 모습을 보여주는 덧그림 레이어.
+// 대칭 OFF가 되면 오른쪽 꽃잎 두 장(바깥 45˚, 중간 67.5˚ 자리 — dcPetalRingMarkup의
+// symmetry-target)이 숨겨지고, 그 자리 근처에 크기·색·방향이 다른 꽃잎이 대신
+// 나타나 "그 꽃잎이 바뀌었다"는 느낌을 준다(꽃잎을 지우지 않고 다른 꽃잎으로
+// 대체되어 보이도록 구성).
+function dcAsymmetricLayerMarkup(){
+  return '<g id="asymmetric-layer">' +
+    '<g class="asym-shape" transform="translate(100 100) rotate(60) scale(1.05)">' +
+      '<path d="' + DC_PATH_OUTER + '" fill="#c0392b"/>' +
     '</g>' +
-    '<g id="layer-symmetry" opacity="' + (_diffLayers.symmetry?1:0) + '">' +
-      '<circle cx="70" cy="75" r="34" fill="none" stroke="#b23b2e" stroke-width="2"/>' +
-      '<circle cx="130" cy="75" r="34" fill="none" stroke="#b23b2e" stroke-width="2"/>' +
+    '<g class="asym-shape" transform="translate(100 100) rotate(84) scale(1.05)">' +
+      '<path d="' + DC_PATH_MIDDLE + '" fill="#8bbf5a"/>' +
     '</g>' +
-    '<g id="layer-pattern" opacity="' + (_diffLayers.pattern?1:0) + '">' +
-      '<path d="M70 55 L82 75 L70 95 L58 75 Z" fill="none" stroke="#2c5a78" stroke-width="2"/>' +
-      '<path d="M130 55 L142 75 L130 95 L118 75 Z" fill="none" stroke="#2c5a78" stroke-width="2"/>' +
-      '<circle cx="70" cy="75" r="8" fill="#2c5a78"/><circle cx="130" cy="75" r="8" fill="#2c5a78"/>' +
-    '</g>' +
-    '<g id="layer-color" opacity="' + (_diffLayers.color?1:0) + '">' +
-      '<circle cx="70" cy="75" r="6" fill="#c8932f"/><circle cx="130" cy="75" r="6" fill="#c8932f"/>' +
+  '</g>';
+}
+
+// 문양 OFF일 때 보여줄 "단순한 동심원" (바깥 청색 / 중간 청록 / 안쪽 분홍 원)
+function dcPlainPatternLayerMarkup(){
+  return '<g id="plain-pattern-layer">' +
+    '<circle cx="100" cy="100" r="84" fill="' + DC_RING_DEFS.outer.color + '"/>' +
+    '<circle cx="100" cy="100" r="66" fill="' + DC_RING_DEFS.middle.color + '"/>' +
+    '<circle cx="100" cy="100" r="46" fill="' + DC_RING_DEFS.inner.color + '"/>' +
+  '</g>';
+}
+
+// STEP2 화면 진입 시 한 번만 호출해서 SVG 전체 마크업을 만든다.
+// 그리는 순서(뒤→앞): 문양 OFF용 동심원 → 중간 청록 → 바깥 청색 → 분홍 뒤 미색
+// 테두리 → 안쪽 분홍 → 중앙 원+노란 점 → 대칭 OFF용 덧그림.
+function buildDancheongSvgMarkup(){
+  return '<svg id="dancheong-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" ' +
+      'role="img" aria-label="단청 문양 관찰 그림">' +
+    '<g id="flower-artwork">' +
+      dcPlainPatternLayerMarkup() +
+      dcPetalRingMarkup('middle-teal-petals', DC_PATH_MIDDLE, DC_RING_DEFS.middle.color, DC_RING_DEFS.middle.angleOffset, DC_RING_DEFS.middle.targetBase) +
+      dcPetalRingMarkup('outer-blue-petals', DC_PATH_OUTER, DC_RING_DEFS.outer.color, DC_RING_DEFS.outer.angleOffset, DC_RING_DEFS.outer.targetBase) +
+      dcPetalRingMarkup('cream-backing', DC_PATH_CREAM, DC_RING_DEFS.cream.color, DC_RING_DEFS.cream.angleOffset) +
+      dcPetalRingMarkup('inner-pink-petals', DC_PATH_INNER, DC_RING_DEFS.inner.color, DC_RING_DEFS.inner.angleOffset) +
+      '<g id="flower-center">' +
+        '<circle cx="100" cy="100" r="' + DC_CENTER_R + '" fill="' + DC_CENTER_COLOR + '"/>' +
+        dcCenterDotsMarkup() +
+      '</g>' +
+      dcAsymmetricLayerMarkup() +
     '</g>' +
   '</svg>';
 }
 
+// 상태(dancheongLayerState)가 바뀔 때마다 호출: SVG를 다시 만들지 않고
+// 이미 화면에 있는 <svg id="dancheong-svg">에 class만 토글하고,
+// 버튼 표시(aria-pressed 포함)와 관찰 안내 문구(aria-live)를 함께 갱신한다.
+function updateDancheongLayers(){
+  var svg = document.getElementById('dancheong-svg');
+  if(!svg) return;
+
+  svg.classList.toggle('color-off', !dancheongLayerState.color);
+  svg.classList.toggle('pattern-off', !dancheongLayerState.pattern);
+  svg.classList.toggle('repetition-off', !dancheongLayerState.repetition);
+  svg.classList.toggle('symmetry-off', !dancheongLayerState.symmetry);
+
+  ['color', 'pattern', 'repetition', 'symmetry'].forEach(function(key){
+    var btn = document.querySelector('.element-toggle[data-element="' + key + '"]');
+    if(!btn) return;
+    var isOn = dancheongLayerState[key];
+    btn.classList.toggle('is-on', isOn);
+    btn.classList.toggle('is-off', !isOn);
+    btn.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+    var stateEl = btn.querySelector('.toggle-state');
+    if(stateEl) stateEl.textContent = isOn ? 'ON' : 'OFF';
+  });
+
+  var messages = [];
+  if(!dancheongLayerState.color) messages.push('색이 사라지자 문양의 형태가 더 잘 보여요.');
+  if(!dancheongLayerState.pattern) messages.push('꽃잎 장식이 사라지자 단순한 색면만 남았어요.');
+  if(!dancheongLayerState.repetition) messages.push('되풀이되던 꽃잎을 하나씩만 남겼어요.');
+  if(!dancheongLayerState.symmetry) messages.push('양쪽 모양이 달라지자 균형이 깨져 보여요.');
+
+  var liveEl = document.getElementById('dc-live-region');
+  if(liveEl){
+    if(messages.length === 0){
+      liveEl.innerHTML = '<p>색과 문양이 반복되고 대칭을 이루어 조화로운 단청이 완성되었어요.</p>';
+    } else if(messages.length === 1){
+      liveEl.innerHTML = '<p>' + messages[0] + '</p>';
+    } else {
+      liveEl.innerHTML = '<ul>' + messages.map(function(m){ return '<li>' + m + '</li>'; }).join('') + '</ul>';
+    }
+  }
+}
+
+function dcToggleButtonHtml(key, icon, label){
+  var isOn = dancheongLayerState[key];
+  return '<button type="button" class="element-toggle ' + (isOn ? 'is-on' : 'is-off') + '" ' +
+      'data-element="' + key + '" aria-pressed="' + (isOn ? 'true' : 'false') + '" ' +
+      'onclick="App.toggleDancheongElement(\'' + key + '\')">' +
+    '<span class="toggle-icon">' + icon + '</span>' +
+    '<span class="toggle-label">' + label + '</span>' +
+    '<span class="toggle-state">' + (isOn ? 'ON' : 'OFF') + '</span>' +
+  '</button>';
+}
+
 route('/student/lesson1/step2', function(){
-  _diffLayers = { color:true, pattern:true, repeat:true, symmetry:true };
+  // 화면에 처음 들어오면 네 요소 모두 ON에서 시작한다.
+  dancheongLayerState = { color:true, pattern:true, repetition:true, symmetry:true };
   var draft = Draft.load('l1step2') || {};
   setApp(
     '<div class="top-brand"><h2>「단청을 벗겨 보자」</h2></div>' +
     '<div class="card">' +
-      '<div class="diff-layer" id="diff-svg-wrap">' + dancheongSvg() + '</div>' +
-      '<div class="toggle-row">' +
-        '<div class="toggle-btn" id="tg-color" onclick="App.toggleLayer(\'color\')">🎨 색</div>' +
-        '<div class="toggle-btn" id="tg-pattern" onclick="App.toggleLayer(\'pattern\')">🌸 문양</div>' +
-        '<div class="toggle-btn" id="tg-repeat" onclick="App.toggleLayer(\'repeat\')">🔁 반복</div>' +
-        '<div class="toggle-btn" id="tg-symmetry" onclick="App.toggleLayer(\'symmetry\')">⚖ 대칭</div>' +
+      '<p id="dc-observe-guide">단청을 이루는 요소를 하나씩 꺼 보세요.<br>무엇이 달라지는지 자세히 관찰해 봅시다.</p>' +
+      '<div class="dancheong-observation" id="dc-svg-wrap">' + buildDancheongSvgMarkup() + '</div>' +
+      '<div class="element-toggle-grid">' +
+        dcToggleButtonHtml('color', '🎨', '색') +
+        dcToggleButtonHtml('pattern', '🌸', '문양') +
+        dcToggleButtonHtml('repetition', '🔁', '반복') +
+        dcToggleButtonHtml('symmetry', '⚖', '대칭') +
       '</div>' +
-      '<p class="muted">버튼을 눌러 요소를 지워보고 비교해 보세요. (실제 수업에서는 선생님이 준비한 단청 사진으로 진행합니다)</p>' +
-      '<h3 style="margin-top:16px;">어떤 요소가 사라졌을 때 가장 크게 달라졌나요?</h3>' +
+      '<button type="button" class="btn btn-secondary" onclick="App.resetDancheongLayers()">원래 단청으로 되돌리기</button>' +
+      '<div id="dc-live-region" class="dc-live-region" aria-live="polite"></div>' +
+      '<h3 style="margin-top:20px;">어떤 요소가 사라졌을 때 가장 크게 달라졌나요?</h3>' +
       '<div id="removed-choice">' +
         ['색','문양','반복','대칭'].map(function(v){
           return '<span class="value-pick' + (draft.removedElementChoice===v?' selected':'') + '" onclick="App.pickRemoved(this,\''+v+'\')">'+v+'</span>';
@@ -673,6 +905,7 @@ route('/student/lesson1/step2', function(){
       '<button class="btn btn-main" onclick="App.saveLesson1Step2()">실험 기록 저장</button>' +
     '</div>'
   );
+  updateDancheongLayers();
   var save = Draft.debounced('l1step2', function(){
     return {
       removedElementChoice: document.getElementById('removed-choice-val').value,
@@ -683,11 +916,20 @@ route('/student/lesson1/step2', function(){
   App._saveL1Step2Draft = save;
 });
 
-App.toggleLayer = function(name){
-  _diffLayers[name] = !_diffLayers[name];
-  document.getElementById('diff-svg-wrap').innerHTML = dancheongSvg();
-  document.getElementById('tg-'+name).classList.toggle('off', !_diffLayers[name]);
+App.toggleDancheongElement = function(key){
+  if(!(key in dancheongLayerState)) return;
+  dancheongLayerState[key] = !dancheongLayerState[key];
+  updateDancheongLayers();
 };
+
+App.resetDancheongLayers = function(){
+  dancheongLayerState.color = true;
+  dancheongLayerState.pattern = true;
+  dancheongLayerState.repetition = true;
+  dancheongLayerState.symmetry = true;
+  updateDancheongLayers();
+};
+
 App.pickRemoved = function(el, value){
   document.querySelectorAll('#removed-choice .value-pick').forEach(function(e){ e.classList.remove('selected'); });
   el.classList.add('selected');
