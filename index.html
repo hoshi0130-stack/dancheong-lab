@@ -585,8 +585,7 @@ route('/student/home', async function(){
     l2html = '<div class="status-badge status-done">✓ 탐구 완료</div>' +
       '<button class="btn btn-secondary" style="margin-top:10px;" onclick="go(\'/student/final\')">나의 결과 보기</button>';
   } else {
-    var l2Target = res.lesson2Status === 'not_started' ? '/student/lesson2/step1' :
-      res.lesson2Status === 'step1_done' ? '/student/lesson2/step2' : '/student/lesson2/step3';
+    var l2Target = res.lesson2Status === 'not_started' ? '/student/lesson2/step1' : '/student/lesson2/home';
     var l2Label = res.lesson2Status === 'not_started' ? '시작하기' : '이어하기';
     l2html = '<button class="btn btn-main" onclick="go(\'' + l2Target + '\')">2차시 탐구하기 · ' + l2Label + '</button>';
   }
@@ -1117,6 +1116,7 @@ route('/teacher/home', async function(){
       '<div class="menu-tile" onclick="go(\'/teacher/progress\')"><span class="fe">①</span>진행 현황</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/records\')"><span class="fe">②</span>학생 기록</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/values\')"><span class="fe">③</span>연꽃 가치</div>' +
+      '<div class="menu-tile" onclick="go(\'/teacher/groups\')"><span class="fe">👥</span>이음 프로젝트</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/changes\')"><span class="fe">④</span>수업 전후 변화</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/settings\')" style="grid-column:1/3;"><span class="fe">⑤</span>학급 설정</div>' +
     '</div>' +
@@ -1144,7 +1144,7 @@ route('/teacher/progress', async function(){
     '<div class="card">' +
       '<table><thead><tr><th>번호</th><th>1차시</th><th>연꽃</th><th>2차시</th><th>최종</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table>' +
-      '<p class="muted" style="margin-top:10px;">행에 마우스를 올리면(또는 길게 누르면) 세부 진행 단계를 볼 수 있어요.</p>' +
+      '<p class="muted" style="margin-top:10px;">행에 마우스를 올리면(또는 길게 누르면) 세부 진행 단계를 볼 수 있어요. 2차시 열의 표시는 개인 진행 상태만 나타내며, 모둠(활동2) 진행 상황은 「이음 프로젝트」 화면에서 확인하세요.</p>' +
     '</div>' +
     '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
   );
@@ -1152,10 +1152,10 @@ route('/teacher/progress', async function(){
 </script>
 <script>
 /* =========================================================
-   4단계: 2차시 전체 플로우 (20~28번)
+   4단계: 2차시 전체 플로우 (v3, 개인: 20~21/24~29번 + 모둠: 5~23번)
    ========================================================= */
 
-// ---------- STEP 1: 지난 시간의 나 (20번) ----------
+// ---------- 「지난 시간의 나」 (최초 1회 진입) ----------
 
 route('/student/lesson2/step1', async function(){
   setApp(loadingHtml());
@@ -1170,80 +1170,543 @@ route('/student/lesson2/step1', async function(){
       '<p style="text-align:center;">' + (res.lotusValues||[]).map(escapeHtml).join(' · ') + '</p>' +
       '<h3>1차시 후 나의 생각</h3><p>"' + escapeHtml(res.lesson1Generalization||'') + '"</p>' +
       '<div class="lock-note" style="margin-top:14px;">처음의 나와 지금의 나는 무엇이 달라졌나요? — <strong>짝과 이야기해 보세요.</strong></div>' +
-      '<button class="btn btn-main" onclick="App.goLesson2Step2()">다음</button>' +
+      '<button class="btn btn-main" onclick="App.goLesson2Home()">다음</button>' +
     '</div>'
   );
 });
 
-App.goLesson2Step2 = async function(){
+App.goLesson2Home = async function(){
   var res = await api('saveLesson2Step1', { studentCode: Session.studentCode });
   if(!res.ok){ toast(res.error||'처리하지 못했어요.'); return; }
-  go('/student/lesson2/step2');
+  go('/student/lesson2/home');
 };
 
-// ---------- STEP 2: 100년 뒤까지 이어주고 싶은 가치 (21번) ----------
+// ---------- 2차시 홈 (v3 4번) ----------
 
-var _selectedFuture = [];
-
-route('/student/lesson2/step2', async function(){
-  setApp(loadingHtml());
-  await loadLotusState();
-  _selectedFuture = [];
-  var draft = Draft.load('l2futureReason') || {};
-  var picks = _lotus.values.map(function(v,idx){
-    return '<span class="value-pick" id="fut-pick-'+idx+'" onclick="App.toggleFuturePick('+idx+',\''+escapeHtml(v).replace(/'/g,"\\'")+'\')">🌸 ' + escapeHtml(v) + '</span>';
-  }).join('');
+route('/student/lesson2/home', function(){
+  App._stopGroupPing();
   setApp(
-    '<div class="top-brand"><h2>「100년 뒤까지 이어주고 싶은 가치」</h2></div>' +
+    '<div class="top-brand"><h1>🌿 2차시 ― 단청을 잇다</h1></div>' +
+    '<div class="card lesson-card" onclick="toast(\'선생님과 함께 활동합니다.\')">' +
+      '<span class="emoji">🏛️</span><h2>활동1 · 단청을 잇는 여러 길을 찾아라!</h2>' +
+      '<p class="muted">선생님과 함께 활동합니다.</p>' +
+    '</div>' +
+    '<div class="card lesson-card">' +
+      '<span class="emoji">🔋</span><h2>활동2 · 100년 단청 이음 프로젝트</h2>' +
+      '<p class="muted">모둠당 태블릿 1대로 활동합니다.</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/lesson2/group/select\')">프로젝트 시작</button>' +
+    '</div>' +
+    '<div class="card lesson-card" onclick="toast(\'활동지로 활동합니다.\')">' +
+      '<span class="emoji">🎨</span><h2>활동3 · 오늘에 입히기</h2>' +
+      '<p class="muted">활동지로 활동합니다.</p>' +
+    '</div>' +
+    '<div class="card lesson-card">' +
+      '<span class="emoji">🌸</span><h2>마무리 · 나의 단청 연꽃, 다시 피어나다</h2>' +
+      '<p class="muted">각자의 이음 코드로 접속합니다.</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/lesson2/step3\')">나의 마무리 시작</button>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/student/home\')">홈으로</button></div>'
+  );
+});
+
+// ---------- 활동2 공용: 다른 기기 ping ----------
+
+App._groupPingTimer = null;
+App._currentGroup = null;
+
+App._startGroupPing = function(groupNumber){
+  App._stopGroupPing();
+  App._currentGroup = groupNumber;
+  App._groupPingTimer = setInterval(function(){
+    api('pingGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, deviceId: getDeviceId() });
+  }, 30000);
+};
+App._stopGroupPing = function(){
+  if(App._groupPingTimer){ clearInterval(App._groupPingTimer); App._groupPingTimer = null; }
+};
+
+function groupInUseBannerHtml(possiblyInUse){
+  if(!possiblyInUse) return '';
+  return '<div class="lock-note" id="group-inuse-banner" style="border:1px solid var(--gold); margin-bottom:14px;">' +
+    '⚠️ 이 모둠은 지금 다른 기기에서 사용 중일 수 있어요.<br>같은 모둠 친구들과 확인한 뒤 계속하세요.' +
+    '<button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="document.getElementById(\'group-inuse-banner\').remove()">확인했어요, 계속하기</button>' +
+  '</div>';
+}
+
+// ---------- 모둠 선택 (v3 5~6번) ----------
+
+route('/student/lesson2/group/select', async function(){
+  setApp(loadingHtml());
+  var res = await api('getStudentHome', { studentCode: Session.studentCode });
+  var groupCount = (res && res.groupCount) || 6;
+  var tiles = '';
+  for(var i=1;i<=groupCount;i++){
+    tiles += '<div class="menu-tile" onclick="App.confirmGroupPick(' + i + ')">' + i + '모둠</div>';
+  }
+  setApp(
+    '<div class="top-brand"><h1>👥 100년 단청 이음 프로젝트</h1>' +
+      '<p class="muted">이 활동은 <strong>혼자 결정하지 않습니다.</strong><br>모둠원과 함께 이야기하여 우리 모둠의 선택을 만들어 보세요.</p>' +
+    '</div>' +
+    '<div class="card"><h3>우리 모둠을 선택하세요.</h3><div class="menu-grid">' + tiles + '</div></div>' +
+    '<div id="group-confirm-area"></div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/student/lesson2/home\')">← 2차시 홈으로</button></div>'
+  );
+});
+
+App.confirmGroupPick = function(groupNumber){
+  document.getElementById('group-confirm-area').innerHTML =
+    '<div class="card center">' +
+      '<h3>' + groupNumber + '모둠 맞나요?</h3>' +
+      '<p class="muted">이 활동은 모둠원과 함께 결정하는 공동 기록입니다.</p>' +
+      '<div class="row">' +
+        '<button class="btn btn-secondary" onclick="document.getElementById(\'group-confirm-area\').innerHTML=\'\'">다시 선택</button>' +
+        '<button class="btn btn-main" style="margin-top:0;" onclick="App.startGroupProject(' + groupNumber + ')">' + groupNumber + '모둠 프로젝트 시작</button>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('group-confirm-area').scrollIntoView({behavior:'smooth'});
+};
+
+var GROUP_STEP_ROUTES = {
+  priority: '/student/lesson2/group/priority',
+  allocation: '/student/lesson2/group/allocate',
+  confirmed: '/student/lesson2/group/situation',
+  situation_shown: '/student/lesson2/group/meeting',
+  keeping: '/student/lesson2/group/reason',
+  redeciding: '/student/lesson2/group/reallocate',
+  reason: '/student/lesson2/group/reason',
+  done: null
+};
+
+App._groupProject = null;
+
+App.startGroupProject = async function(groupNumber){
+  var res = await api('getGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, studentCode: Session.studentCode, deviceId: getDeviceId() });
+  if(!res.ok){ toast(res.error||'프로젝트를 불러오지 못했어요.'); return; }
+  App._groupProject = res;
+  App._currentGroup = groupNumber;
+  if(res.groupStep === 'done'){
+    document.getElementById('group-confirm-area').innerHTML =
+      '<div class="card center">' +
+        '<h3>' + groupNumber + '모둠의 프로젝트가 완료되었습니다.</h3>' +
+        '<button class="btn btn-main" onclick="go(\'/student/lesson2/group/result?mode=view&g=' + groupNumber + '\')">결과 다시 보기</button>' +
+      '</div>';
+    return;
+  }
+  document.getElementById('group-confirm-area').innerHTML =
+    '<div class="card center">' +
+      '<h3>' + groupNumber + '모둠의 프로젝트가 있습니다.</h3>' +
+      '<p class="muted">이전에 하던 활동을 이어서 할까요?</p>' +
+      '<button class="btn btn-main" onclick="App.resumeGroupProject(' + groupNumber + ')">이어하기</button>' +
+    '</div>';
+};
+
+App.resumeGroupProject = function(groupNumber){
+  var target = GROUP_STEP_ROUTES[App._groupProject.groupStep] || '/student/lesson2/group/priority';
+  go(target + (target.indexOf('?')===-1 ? '?g=' : '&g=') + groupNumber);
+};
+
+// ---------- STEP 1: 1순위 선택 (v3 8~9번) ----------
+
+var _groupFirstPriority = null;
+
+route('/student/lesson2/group/priority', function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  App._startGroupPing(groupNumber);
+  _groupFirstPriority = null;
+  renderGroupPriority(groupNumber);
+});
+
+function renderGroupPriority(groupNumber){
+  var options = [
+    {key:'appearance', icon:'🏛️', label:'모습 지키기', desc:'단청의 모습을 기록하고 보존하며 고친다.'},
+    {key:'skill', icon:'🖌️', label:'기술 이어 주기', desc:'단청을 만들고 고치는 기술을 다음 세대에 전한다.'},
+    {key:'meaning', icon:'💬', label:'의미 나누기', desc:'사람들이 단청의 의미와 가치를 알고 경험하게 한다.'}
+  ];
+  var picks = options.map(function(o){
+    return '<div class="value-pick' + (_groupFirstPriority===o.key?' selected':'') + '" style="display:block; margin:8px 0;" onclick="App.pickGroupPriority(\''+o.key+'\',' + groupNumber + ')">' +
+      o.icon + ' <strong>' + o.label + '</strong><br><span class="muted" style="font-weight:400;">' + o.desc + '</span></div>';
+  }).join('');
+  var discuss = _groupFirstPriority ?
     '<div class="card">' +
-      '<p>내가 발견한 가치 중 100년 뒤까지 꼭 이어주고 싶은 가치를 <strong>2개</strong> 골라보세요.</p>' +
-      '<div id="future-picks">' + picks + '</div>' +
-      '<label class="field-label" style="margin-top:16px;">왜 이 가치를 꼭 이어주고 싶나요?</label>' +
-      '<textarea id="future-reason" maxlength="300">' + escapeHtml(draft.text||'') + '</textarea>' +
-      '<button class="btn btn-main" onclick="App.saveFutureValue()">나의 선택 저장</button>' +
+      '<h3>💬 먼저 이야기해 보세요.</h3>' +
+      '<p><strong>왜 이것을 가장 중요하다고 생각했나요?</strong></p>' +
+      '<p class="muted">모둠원 모두의 의견을 들어본 뒤 결정하세요.</p>' +
+      '<button class="btn btn-main" onclick="go(\'/student/lesson2/group/allocate?g=' + groupNumber + '\')">이음 힘 나누기 →</button>' +
+    '</div>' : '';
+  setApp(
+    '<div class="top-brand"><h2>STEP 1</h2><h1>무엇을 가장 중요하게 이어 갈까요?</h1></div>' +
+    '<div class="card">' +
+      '<p><strong>세 가지 모두 중요합니다.</strong><br>우리 모둠이 지금 가장 중요하다고 생각하는 한 가지를 골라 보세요.</p>' +
+      picks +
+    '</div>' +
+    discuss
+  );
+}
+
+App.pickGroupPriority = function(key, groupNumber){
+  _groupFirstPriority = key;
+  renderGroupPriority(groupNumber);
+};
+
+// ---------- STEP 2: 이음 힘 100 배분 (v3 10~12번) ----------
+
+var _groupAlloc = { appearance:0, skill:0, meaning:0 };
+var _groupAllocMode = 'first'; // 'first' | 'realloc'
+var _groupAllocFirst = null; // 재배분 시 최초 배분값 참조용
+
+function allocLabels(){
+  return [
+    {key:'appearance', icon:'🏛️', label:'모습 지키기'},
+    {key:'skill', icon:'🖌️', label:'기술 이어 주기'},
+    {key:'meaning', icon:'💬', label:'의미 나누기'}
+  ];
+}
+
+route('/student/lesson2/group/allocate', function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  App._startGroupPing(groupNumber);
+  _groupAllocMode = 'first';
+  _groupAlloc = { appearance:0, skill:0, meaning:0 };
+  if(!_groupFirstPriority && App._groupProject && App._groupProject.firstPriority){
+    _groupFirstPriority = App._groupProject.firstPriority;
+  }
+  renderGroupAllocate(groupNumber);
+});
+
+function groupAllocSum(){
+  return _groupAlloc.appearance + _groupAlloc.skill + _groupAlloc.meaning;
+}
+
+function renderGroupAllocate(groupNumber){
+  var rows = allocLabels().map(function(o){
+    var val = _groupAlloc[o.key];
+    return '<div class="row" style="align-items:center; margin:10px 0;">' +
+      '<div style="flex:2;">' + o.icon + ' <strong>' + o.label + '</strong></div>' +
+      '<button class="btn btn-secondary btn-small" ' + (val<=0?'disabled':'') + ' onclick="App.adjustGroupAlloc(\''+o.key+'\',-10,' + groupNumber + ')">－10</button>' +
+      '<div style="flex:0 0 40px; text-align:center; font-weight:700;">' + val + '</div>' +
+      '<button class="btn btn-secondary btn-small" onclick="App.adjustGroupAlloc(\''+o.key+'\',10,' + groupNumber + ')">＋10</button>' +
+    '</div>';
+  }).join('');
+  var remain = 100 - groupAllocSum();
+  var canSave = groupAllocSum() === 100 &&
+    allocLabels().every(function(o){ return _groupAlloc[o.key] >= 10; }) &&
+    (_groupAllocMode === 'realloc' || (_groupFirstPriority && _groupAlloc[_groupFirstPriority] >= 50));
+
+  setApp(
+    '<div class="top-brand"><h2>STEP 2</h2><h1>이음 힘 100을 나누어 주세요!</h1></div>' +
+    '<div class="card">' +
+      '<p>단청을 100년 뒤까지 이어 가기 위해 우리 모둠에게 <strong>「이음 힘 100」</strong>이 주어졌습니다.<br>세 가지 길에 어떻게 나누어 사용할지 함께 결정하세요.</p>' +
+      '<div class="lock-note" style="text-align:center; font-weight:700;">🔋 남은 이음 힘: ' + remain + '</div>' +
+      rows +
+      '<div id="group-alloc-area"></div>' +
+      '<button class="btn btn-main" id="group-alloc-save" ' + (canSave?'':'disabled') + ' onclick="App.confirmGroupAllocate(' + groupNumber + ')">우리 모둠의 선택 확인하기</button>' +
     '</div>'
   );
-  document.getElementById('future-reason').addEventListener('input', Draft.debounced('l2futureReason', function(){
-    return { text: document.getElementById('future-reason').value };
+}
+
+App.adjustGroupAlloc = function(key, delta, groupNumber){
+  var next = _groupAlloc[key] + delta;
+  if(next < 0) return;
+  if(delta > 0 && groupAllocSum() + delta > 100){ toast('남은 이음 힘이 부족해요.'); return; }
+  _groupAlloc[key] = next;
+  renderGroupAllocate(groupNumber);
+};
+
+App.confirmGroupAllocate = function(groupNumber){
+  if(groupAllocSum() !== 100){ toast('⚠️ 이음 힘의 합이 100이 되도록 나누어 주세요.'); return; }
+  if(_groupAllocMode === 'first' && _groupAlloc[_groupFirstPriority] < 50){
+    toast('⚠️ 우리 모둠이 가장 중요하다고 선택한 길에는 이음 힘을 50 이상 주세요.'); return;
+  }
+  var labels = allocLabels();
+  var priorityLabel = labels.filter(function(o){ return o.key===_groupFirstPriority; })[0];
+  document.getElementById('group-alloc-area').innerHTML =
+    '<div class="card">' +
+      '<h3>👥 ' + groupNumber + '모둠의 선택</h3>' +
+      labels.map(function(o){ return o.icon + ' ' + o.label + '　' + _groupAlloc[o.key]; }).join('<br>') +
+      (priorityLabel ? '<p style="margin-top:8px;"><strong>우리 모둠의 1순위</strong> ' + priorityLabel.icon + ' ' + priorityLabel.label + '</p>' : '') +
+      '<h3 style="margin-top:16px;">결정하기 전에 확인!</h3>' +
+      '<p><strong>모둠원 모두의 의견을 들어보았나요?</strong></p>' +
+      '<div class="row">' +
+        '<button class="btn btn-secondary" onclick="document.getElementById(\'group-alloc-area\').innerHTML=\'\'">조금 더 이야기하기</button>' +
+        '<button class="btn btn-main" style="margin-top:0;" onclick="App.saveGroupFirstDecision(' + groupNumber + ')">우리 모둠 선택 확정</button>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('group-alloc-area').scrollIntoView({behavior:'smooth'});
+};
+
+App.saveGroupFirstDecision = async function(groupNumber){
+  var res = await api('saveGroupFirstDecision', {
+    classCode: Session.classCode, groupNumber: groupNumber, requestId: uid(),
+    firstPriority: _groupFirstPriority,
+    firstAppearance: _groupAlloc.appearance, firstSkill: _groupAlloc.skill, firstMeaning: _groupAlloc.meaning
+  });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  App._groupProject = res;
+  go('/student/lesson2/group/situation?g=' + groupNumber);
+};
+
+// ---------- STEP 3+4: 시간 흐름 + 새로운 상황 (v3 13~16번) ----------
+
+var GROUP_SITUATIONS = {
+  appearance: { icon:'🏛️', title:'오래된 단청이 손상되고 있어요.', body:'시간이 흐르면서 오래된 단청의 색과 문양이 흐려지고 일부가 손상되고 있습니다.' },
+  skill: { icon:'🖌️', title:'단청을 고칠 사람이 줄고 있어요.', body:'단청 기술을 배우려는 사람이 줄어들어 단청을 만들고 고칠 사람이 부족해지고 있습니다.' },
+  meaning: { icon:'💬', title:'단청의 의미가 잊혀지고 있어요.', body:'사람들은 단청을 아름다운 옛 장식으로 알고 있지만 그 안에 담긴 의미와 가치는 잘 알지 못합니다.' }
+};
+
+route('/student/lesson2/group/situation', async function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  App._startGroupPing(groupNumber);
+  if(!App._groupProject || App._groupProject.groupNumber !== groupNumber){
+    var res = await api('getGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, studentCode: Session.studentCode, deviceId: getDeviceId() });
+    if(!res.ok){ toast(res.error||'불러오지 못했어요.'); go('/student/lesson2/group/select'); return; }
+    App._groupProject = res;
+  }
+  setApp(
+    groupInUseBannerHtml(App._groupProject.possiblyInUse) +
+    '<div class="card center" style="margin-top:20px;">' +
+      '<h2 id="gp-time-msg">⏳ 시간이 흘렀습니다...</h2>' +
+      '<h1 id="gp-time-sub">30년 뒤</h1>' +
+    '</div>'
+  );
+  setTimeout(function(){
+    var situation = GROUP_SITUATIONS[App._groupProject.situationType] || GROUP_SITUATIONS.appearance;
+    setApp(
+      groupInUseBannerHtml(App._groupProject.possiblyInUse) +
+      '<div class="card center">' +
+        '<h1>🚨 예상하지 못한 일이 생겼습니다!</h1>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h2>' + situation.icon + ' ' + escapeHtml(situation.title) + '</h2>' +
+        '<p>' + escapeHtml(situation.body) + '</p>' +
+        '<p class="muted"><strong>시간이 흐르며 새로운 문제가 생겼습니다.</strong><br>이제 우리의 처음 선택을 다시 살펴볼까요?</p>' +
+        '<button class="btn btn-main" onclick="App.saveGroupSituationSeen(' + groupNumber + ')">다음</button>' +
+      '</div>'
+    );
+  }, 1500);
+});
+
+App.saveGroupSituationSeen = async function(groupNumber){
+  var res = await api('saveGroupSituation', { classCode: Session.classCode, groupNumber: groupNumber, requestId: uid() });
+  if(res && res.ok) App._groupProject = res;
+  go('/student/lesson2/group/meeting?g=' + groupNumber);
+};
+
+// ---------- STEP 5: 모둠 회의 (v3 17번) ----------
+
+route('/student/lesson2/group/meeting', async function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  App._startGroupPing(groupNumber);
+  if(!App._groupProject || App._groupProject.groupNumber !== groupNumber){
+    var res = await api('getGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, studentCode: Session.studentCode, deviceId: getDeviceId() });
+    if(!res.ok){ toast(res.error||'불러오지 못했어요.'); go('/student/lesson2/group/select'); return; }
+    App._groupProject = res;
+  }
+  var gp = App._groupProject;
+  setApp(
+    '<div class="top-brand"><h2>STEP 5</h2><h1>모둠 회의</h1></div>' +
+    '<div class="card">' +
+      '<h3>🔍 우리 모둠의 처음 선택</h3>' +
+      '<p>🏛️ 모습　' + gp.firstAppearance + '　🖌️ 기술　' + gp.firstSkill + '　💬 의미　' + gp.firstMeaning + '</p>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>💬 모둠 회의</h3>' +
+      '<p>새로운 상황을 알고 난 뒤에도 <strong>우리의 처음 선택은 그대로인가요?</strong><br>서로 다른 의견이 있다면 먼저 들어보세요.</p>' +
+      '<div class="row">' +
+        '<button class="btn btn-secondary" onclick="App.keepGroupDecision(' + groupNumber + ')">처음 선택 유지하기</button>' +
+        '<button class="btn btn-main" style="margin-top:0;" onclick="go(\'/student/lesson2/group/reallocate?g=' + groupNumber + '\')">다시 나누어 보기</button>' +
+      '</div>' +
+    '</div>'
+  );
+});
+
+App.keepGroupDecision = async function(groupNumber){
+  var res = await api('saveGroupFinalDecision', { classCode: Session.classCode, groupNumber: groupNumber, requestId: uid(), decision: 'keep' });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  App._groupProject = res;
+  toast('우리의 판단을 유지했습니다.');
+  go('/student/lesson2/group/reason?g=' + groupNumber);
+};
+
+// ---------- STEP 6-B: 재배분 (v3 19번) ----------
+
+route('/student/lesson2/group/reallocate', async function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  App._startGroupPing(groupNumber);
+  if(!App._groupProject || App._groupProject.groupNumber !== groupNumber){
+    var res = await api('getGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, studentCode: Session.studentCode, deviceId: getDeviceId() });
+    if(!res.ok){ toast(res.error||'불러오지 못했어요.'); go('/student/lesson2/group/select'); return; }
+    App._groupProject = res;
+  }
+  var gp = App._groupProject;
+  _groupAllocMode = 'realloc';
+  _groupAlloc = { appearance: Number(gp.firstAppearance)||0, skill: Number(gp.firstSkill)||0, meaning: Number(gp.firstMeaning)||0 };
+  _groupFirstPriority = gp.firstPriority;
+  renderGroupReallocate(groupNumber, gp);
+});
+
+function renderGroupReallocate(groupNumber, gp){
+  var rows = allocLabels().map(function(o){
+    var val = _groupAlloc[o.key];
+    return '<div class="row" style="align-items:center; margin:10px 0;">' +
+      '<div style="flex:2;">' + o.icon + ' <strong>' + o.label + '</strong></div>' +
+      '<button class="btn btn-secondary btn-small" ' + (val<=0?'disabled':'') + ' onclick="App.adjustGroupRealloc(\''+o.key+'\',-10,' + groupNumber + ')">－10</button>' +
+      '<div style="flex:0 0 40px; text-align:center; font-weight:700;">' + val + '</div>' +
+      '<button class="btn btn-secondary btn-small" onclick="App.adjustGroupRealloc(\''+o.key+'\',10,' + groupNumber + ')">＋10</button>' +
+    '</div>';
+  }).join('');
+  var remain = 100 - groupAllocSum();
+  var canSave = groupAllocSum() === 100 && allocLabels().every(function(o){ return _groupAlloc[o.key] >= 10; });
+  setApp(
+    '<div class="top-brand"><h2>STEP 6</h2><h1>다시 나누어 보기</h1></div>' +
+    '<div class="card">' +
+      '<h3>처음의 선택</h3>' +
+      '<p>모습 ' + gp.firstAppearance + ' │ 기술 ' + gp.firstSkill + ' │ 의미 ' + gp.firstMeaning + '</p>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="lock-note" style="text-align:center; font-weight:700;">🔋 남은 이음 힘: ' + remain + '</div>' +
+      rows +
+      '<button class="btn btn-main" ' + (canSave?'':'disabled') + ' onclick="App.saveGroupReallocate(' + groupNumber + ')">저장하기</button>' +
+    '</div>'
+  );
+}
+
+App.adjustGroupRealloc = function(key, delta, groupNumber){
+  var next = _groupAlloc[key] + delta;
+  if(next < 0) return;
+  if(delta > 0 && groupAllocSum() + delta > 100){ toast('남은 이음 힘이 부족해요.'); return; }
+  _groupAlloc[key] = next;
+  renderGroupReallocate(groupNumber, App._groupProject);
+};
+
+App.saveGroupReallocate = async function(groupNumber){
+  if(groupAllocSum() !== 100){ toast('⚠️ 이음 힘의 합이 100이 되도록 나누어 주세요.'); return; }
+  var res = await api('saveGroupFinalDecision', {
+    classCode: Session.classCode, groupNumber: groupNumber, requestId: uid(), decision: 'change',
+    finalAppearance: _groupAlloc.appearance, finalSkill: _groupAlloc.skill, finalMeaning: _groupAlloc.meaning
+  });
+  if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
+  App._groupProject = res;
+  go('/student/lesson2/group/reason?g=' + groupNumber);
+};
+
+// ---------- STEP 7: 판단 이유 기록 (v3 20번) ----------
+
+route('/student/lesson2/group/reason', function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  App._startGroupPing(groupNumber);
+  var draftKey = 'group_' + groupNumber + '_reason';
+  var draft = Draft.load(draftKey) || {};
+  setApp(
+    '<div class="top-brand"><h2>💭 왜 그렇게 판단했나요?</h2></div>' +
+    '<div class="card">' +
+      '<p>처음의 선택을 유지하거나 바꾼 까닭을 <strong>우리 모둠의 말로 짧게 남겨 주세요.</strong></p>' +
+      '<p class="muted" style="margin-bottom:4px;">우리 모둠은</p>' +
+      '<textarea id="group-reason" maxlength="100">' + escapeHtml(draft.text||'') + '</textarea>' +
+      '<div class="char-count" id="group-reason-count"></div>' +
+      '<button class="btn btn-main" onclick="App.saveGroupReason(' + groupNumber + ')">우리 모둠의 판단 저장하기</button>' +
+    '</div>'
+  );
+  bindCounter('group-reason','group-reason-count',100);
+  document.getElementById('group-reason').addEventListener('input', Draft.debounced(draftKey, function(){
+    return { text: document.getElementById('group-reason').value };
   }));
 });
 
-App.toggleFuturePick = function(idx, value){
-  var el = document.getElementById('fut-pick-'+idx);
-  var pos = _selectedFuture.indexOf(value);
-  if(pos !== -1){
-    _selectedFuture.splice(pos,1); el.classList.remove('selected');
-  } else {
-    if(_selectedFuture.length >= 2){ toast('가치는 2개까지만 선택할 수 있어요.'); return; }
-    _selectedFuture.push(value); el.classList.add('selected');
-  }
-};
-
-App.saveFutureValue = async function(){
-  if(_selectedFuture.length !== 2){ toast('가치를 정확히 2개 선택해 주세요.'); return; }
-  var reason = document.getElementById('future-reason').value.trim();
-  var res = await api('saveLesson2FutureValue', { studentCode: Session.studentCode, selectedFutureValues: _selectedFuture, futureValueReason: reason });
+App.saveGroupReason = async function(groupNumber){
+  var reason = document.getElementById('group-reason').value.trim();
+  if(!reason){ toast('판단한 까닭을 적어 주세요.'); return; }
+  var res = await api('saveGroupProjectReason', { classCode: Session.classCode, groupNumber: groupNumber, requestId: uid(), decisionReason: reason });
   if(!res.ok){ toast(res.error||'저장하지 못했어요.'); return; }
-  Draft.clear('l2futureReason');
-  go('/student/lesson2/interstitial');
+  Draft.clear('group_' + groupNumber + '_reason');
+  App._groupProject = res;
+  go('/student/lesson2/group/result?g=' + groupNumber);
 };
 
-route('/student/lesson2/interstitial', function(){
+// ---------- STEP 8: 처음 ↔ 지금 비교 (v3 21~22번) ----------
+
+function allocDiffRow(icon, label, first, final_){
+  first = Number(first)||0; final_ = Number(final_)||0;
+  var diff = final_ - first;
+  var diffLabel = diff > 0 ? ' ↑' + diff : (diff < 0 ? ' ↓' + Math.abs(diff) : ' ―');
+  return '<tr><td style="text-align:left;">' + icon + ' ' + label + '</td><td>' + first + '</td><td>' + final_ + diffLabel + '</td></tr>';
+}
+
+route('/student/lesson2/group/result', async function(query){
+  var groupNumber = Number(query.g || App._currentGroup);
+  if(!groupNumber){ go('/student/lesson2/group/select'); return; }
+  var viewMode = query.mode === 'view';
+  if(!viewMode) App._startGroupPing(groupNumber); else App._stopGroupPing();
+  setApp(loadingHtml());
+  var res = await api('getGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, studentCode: Session.studentCode, deviceId: getDeviceId() });
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  App._groupProject = res;
+
+  var sameChoice = res.decision === 'keep';
+  var situation = GROUP_SITUATIONS[res.situationType] || GROUP_SITUATIONS.appearance;
+
+  setApp(
+    '<div class="top-brand"><h1>🌱 우리 모둠의 생각은 이렇게 달라졌어요</h1></div>' +
+    '<div class="card">' +
+      (sameChoice ? '<p><strong>처음과 지금의 선택이 같습니다.</strong></p>' : '') +
+      '<table><thead><tr><th></th><th>처음</th><th>지금</th></tr></thead><tbody>' +
+        allocDiffRow('🏛️','모습', res.firstAppearance, res.finalAppearance) +
+        allocDiffRow('🖌️','기술', res.firstSkill, res.finalSkill) +
+        allocDiffRow('💬','의미', res.firstMeaning, res.finalMeaning) +
+      '</tbody></table>' +
+    '</div>' +
+    '<div class="card">' +
+      '<h3>우리가 만난 상황</h3><p>🚨 ' + escapeHtml(situation.body) + '</p>' +
+      '<h3>우리 모둠의 생각</h3><p>"' + escapeHtml(res.decisionReason||'') + '"</p>' +
+      '<p class="muted" style="margin-top:12px;">상황에 따라 생각은 달라질 수 있습니다. 중요한 것은 선택한 까닭을 설명하는 것입니다.</p>' +
+    '</div>' +
+    (viewMode ?
+      '<div class="card center">' +
+        '<h3>그런데...</h3>' +
+        '<p class="muted">단청을 이어 가는 방법은 모습·기술·의미를 이어 가는 것뿐일까요?<br><strong>단청의 특징과 가치를 오늘의 생활과 연결하는 방법도 생각해 봅시다.</strong></p>' +
+        '<button class="btn btn-main" onclick="go(\'/student/lesson2/home\')">모둠 홈으로</button>' +
+      '</div>' :
+      '<div class="card center">' +
+        '<h3>그런데...</h3>' +
+        '<p class="muted">단청을 이어 가는 방법은 모습·기술·의미를 이어 가는 것뿐일까요?<br><strong>단청의 특징과 가치를 오늘의 생활과 연결하는 방법도 생각해 봅시다.</strong></p>' +
+        '<button class="btn btn-main" onclick="App.completeGroupProject(' + groupNumber + ')">프로젝트 완료</button>' +
+      '</div>'
+    )
+  );
+});
+
+App.completeGroupProject = async function(groupNumber){
+  var res = await api('completeGroupProject', { classCode: Session.classCode, groupNumber: groupNumber, requestId: uid() });
+  if(!res.ok){ toast(res.error||'완료 처리하지 못했어요.'); return; }
+  go('/student/lesson2/group/done?g=' + groupNumber);
+};
+
+// ---------- 활동2 종료 (v3 23번) ----------
+
+route('/student/lesson2/group/done', function(query){
+  App._stopGroupPing();
+  var groupNumber = Number(query.g || App._currentGroup) || '';
   setApp(
     '<div class="card center" style="margin-top:60px;">' +
-      '<div style="font-size:3rem;">🤝</div>' +
-      '<h2>나의 선택을 저장했어요.</h2>' +
-      '<p class="muted">이제 친구들의 선택을 만나볼 시간이에요.</p>' +
+      '<div style="font-size:3rem;">👥</div>' +
+      '<h1>' + groupNumber + '모둠 프로젝트 완료!</h1>' +
+      '<p class="muted">이제 태블릿을 내려놓고 선생님의 안내에 따라 다음 활동을 시작하세요.</p>' +
       '<button class="btn btn-main" onclick="go(\'/student/home\')">홈으로</button>' +
     '</div>'
   );
 });
 
-// ---------- STEP 3: 새 꽃잎 + 사후 설문 + 최종 생각 (24~28번) ----------
+// ---------- 마무리: 새 꽃잎 + 사후 설문 + 최종 생각 (v3 26~29번) ----------
 
 var _addPetalMode = null; // 'add' | 'keep' | null
 
 route('/student/lesson2/step3', async function(){
+  App._stopGroupPing();
   setApp(loadingHtml());
   await loadLotusState();
   _addPetalMode = null;
@@ -1264,11 +1727,10 @@ function renderLesson2Step3(){
     '</div>' : '';
 
   setApp(
-    '<div class="top-brand"><h2>새롭게 피어난 생각</h2></div>' +
+    '<div class="top-brand"><h1>🌸 나의 단청 연꽃, 다시 피어나다</h1><p class="muted">1차시에 내가 발견한 단청의 가치를 다시 살펴보세요.</p></div>' +
     '<div class="card">' +
-      '<h3>1차시의 나의 연꽃</h3>' +
       '<div class="petal-list">' + petals + '</div>' +
-      '<p style="margin-top:10px;">수업을 마친 지금, 새롭게 중요하다고 생각하게 된 가치가 있나요?</p>' +
+      '<p style="margin-top:10px;">단청을 어떻게 이어 갈지 생각해 보고 나니 새롭게 중요하다고 느낀 가치가 있나요?</p>' +
       '<div class="row">' +
         '<button class="btn btn-secondary" onclick="App.setAddPetalMode(\'add\')">＋ 새로운 꽃잎 피우기</button>' +
         '<button class="btn btn-secondary" onclick="App.setAddPetalMode(\'keep\')">지금의 연꽃 그대로 두기</button>' +
@@ -1281,6 +1743,7 @@ function renderLesson2Step3(){
       '<h3 style="margin-top:20px;">수업 후 단청을 더 알아보고 싶은 마음은 어느 정도인가요?</h3>' +
       scaleRowHtml('post-interest', null, '별로 궁금하지 않아요', '매우 궁금해요') +
       '<label class="field-label" style="margin-top:20px;">지금 나에게 단청을 잇는다는 것은 무엇인가요?</label>' +
+      '<p class="muted">정답은 없습니다. 두 시간 동안의 활동을 떠올리며 자신의 생각으로 써 보세요.</p>' +
       '<textarea id="final-concept" maxlength="200">' + escapeHtml(finalDraft.text || '') + '</textarea>' +
       '<div class="char-count" id="final-concept-count"></div>' +
       '<button class="btn btn-main" onclick="App.saveLesson2Final()">나의 이음 기록 완성하기</button>' +
@@ -1420,7 +1883,6 @@ route('/teacher/records', async function(query){
         '<h3>연꽃 가치</h3><p>' + rec.lotusValues.map(escapeHtml).join(' · ') + '</p>' +
         '<h3>연꽃 가치 이유</h3><p>' + rec.lotusReasons.map(escapeHtml).join(' / ') + '</p>' +
         '<h3>연꽃의 마음</h3><p>' + escapeHtml(rec.lesson1Generalization) + '</p>' +
-        '<h3>100년 뒤 선택 가치 / 이유</h3><p>' + rec.selectedFutureValues.map(escapeHtml).join(' · ') + ' — ' + escapeHtml(rec.futureValueReason) + '</p>' +
         '<h3>새롭게 추가한 가치</h3><p>' + escapeHtml(rec.addedValue) + ' — ' + escapeHtml(rec.addedValueReason) + '</p>' +
         '<h3>사후 이해도 / 관심도</h3><p>' + escapeHtml(rec.postUnderstanding) + ' / ' + escapeHtml(rec.postInterest) + '</p>' +
         '<h3>최종 생각</h3><p>' + escapeHtml(rec.finalConcept) + '</p>' +
@@ -1468,7 +1930,77 @@ route('/teacher/values', async function(){
   );
 });
 
-// ---------- 37. 수업 전후 변화 ----------
+// ---------- 37~38. 이음 프로젝트 (v3 신규) ----------
+
+route('/teacher/groups', async function(query){
+  if(!requireTeacherSession()) return;
+  if(query && query.g){
+    setApp(loadingHtml());
+    var rec = await api('getGroupProjectDetail', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, groupNumber: query.g });
+    if(rec.authExpired){ Session.clearTeacher(); go('/'); return; }
+    if(!rec.ok){ setApp('<div class="card center"><p>' + escapeHtml(rec.error) + '</p></div>'); return; }
+    var stepLabel = { priority:'진행 중 (1순위)', allocation:'진행 중 (배분)', confirmed:'진행 중 (상황 대기)',
+      situation_shown:'진행 중 (모둠 회의)', keeping:'진행 중 (이유 기록)', redeciding:'진행 중 (재배분)',
+      reason:'진행 중 (이유 기록)', done:'완료' }[rec.groupStep] || rec.groupStep;
+    setApp(
+      '<div class="top-brand"><h2>👥 ' + escapeHtml(String(rec.groupNumber)) + '모둠</h2></div>' +
+      '<div class="card">' +
+        '<p><strong>대표 학생</strong> ' + escapeHtml(rec.representativeStudentCode||'-') + '</p>' +
+        '<p><strong>상태</strong> ' + escapeHtml(stepLabel) + '</p>' +
+        '<h3>최초 1순위</h3><p>' + escapeHtml(rec.firstPriority||'-') + '</p>' +
+        '<h3>최초 배분</h3><p>모습 ' + (rec.firstAppearance??'-') + ' / 기술 ' + (rec.firstSkill??'-') + ' / 의미 ' + (rec.firstMeaning??'-') + '</p>' +
+        '<h3>제시된 상황</h3><p>' + escapeHtml(rec.situationType||'-') + '</p>' +
+        '<h3>유지/변경</h3><p>' + (rec.decision==='keep'?'유지':rec.decision==='change'?'변경':'-') + '</p>' +
+        '<h3>최종 배분</h3><p>모습 ' + (rec.finalAppearance??'-') + ' / 기술 ' + (rec.finalSkill??'-') + ' / 의미 ' + (rec.finalMeaning??'-') + '</p>' +
+        '<h3>판단 이유</h3><p>' + escapeHtml(rec.decisionReason||'-') + '</p>' +
+        '<h3>완료 시각</h3><p>' + escapeHtml(rec.projectCompletedAt||'-') + '</p>' +
+        '<button class="btn btn-danger" style="margin-top:14px;" onclick="App.resetGroupProject(' + rec.groupNumber + ')">프로젝트 초기화</button>' +
+      '</div>' +
+      '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/groups\')">← 모둠 목록으로</button></div>'
+    );
+    return;
+  }
+  setApp(loadingHtml());
+  var res = await api('getClassGroupStats', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken });
+  if(res.authExpired){ Session.clearTeacher(); go('/'); return; }
+  if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error) + '</p></div>'); return; }
+  var rows = (res.groups||[]).map(function(g){
+    var statusLabel = g.groupStep === 'done' ? '완료' : (g.groupStep ? '진행 중' : '-');
+    var decisionLabel = g.decision === 'keep' ? '유지' : (g.decision === 'change' ? '변경' : '-');
+    return '<tr onclick="go(\'/teacher/groups?g=' + g.groupNumber + '\')" style="cursor:pointer;">' +
+      '<td>' + g.groupNumber + '</td><td>' + escapeHtml(g.firstPriority||'-') + '</td>' +
+      '<td>' + (g.firstAppearance??'-') + '/' + (g.firstSkill??'-') + '/' + (g.firstMeaning??'-') + '</td>' +
+      '<td>' + escapeHtml(g.situationType||'-') + '</td><td>' + decisionLabel + '</td>' +
+      '<td>' + (g.finalAppearance??'-') + '/' + (g.finalSkill??'-') + '/' + (g.finalMeaning??'-') + '</td>' +
+      '<td>' + statusLabel + '</td>' +
+    '</tr>';
+  }).join('');
+  setApp(
+    '<div class="top-brand"><h2>👥 이음 프로젝트</h2></div>' +
+    '<div class="card">' +
+      '<div style="overflow-x:auto;"><table><thead><tr><th>모둠</th><th>1순위</th><th>최초배분</th><th>상황</th><th>판단</th><th>최종배분</th><th>상태</th></tr></thead>' +
+      '<tbody>' + (rows || '<tr><td colspan="7" class="muted">아직 시작된 모둠이 없어요.</td></tr>') + '</tbody></table></div>' +
+      '<p class="muted" style="margin-top:10px;">행을 누르면 모둠별 세부 내용을 볼 수 있어요.</p>' +
+      '<h3 style="margin-top:16px;">최초 1순위 분포</h3><p>' +
+        '🏛️ 모습 지키기　' + (res.priorityCounts&&res.priorityCounts.appearance||0) + '모둠　' +
+        '🖌️ 기술 이어 주기　' + (res.priorityCounts&&res.priorityCounts.skill||0) + '모둠　' +
+        '💬 의미 나누기　' + (res.priorityCounts&&res.priorityCounts.meaning||0) + '모둠</p>' +
+      '<h3>상황 이후 판단</h3><p>' +
+        '처음 선택 유지　' + (res.decisionCounts&&res.decisionCounts.keep||0) + '모둠　' +
+        '선택 변경　' + (res.decisionCounts&&res.decisionCounts.change||0) + '모둠</p>' +
+    '</div>' +
+    '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
+  );
+});
+
+App.resetGroupProject = async function(groupNumber){
+  if(!confirm(groupNumber + '모둠의 프로젝트를 초기화합니다. 이 작업은 되돌릴 수 없어요. 계속할까요?')) return;
+  var res = await api('resetGroupProject', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, groupNumber: groupNumber });
+  toast(res.ok ? '모둠 프로젝트를 초기화했어요.' : (res.error||'초기화하지 못했어요.'));
+  if(res.ok) go('/teacher/groups');
+};
+
+// ---------- 39(v2 37). 수업 전후 변화 ----------
 
 route('/teacher/changes', async function(){
   if(!requireTeacherSession()) return;
@@ -1495,7 +2027,7 @@ route('/teacher/changes', async function(){
   );
 });
 
-// ---------- 38. 학급 설정 / 39. 데이터 내려받기 ----------
+// ---------- 40(v2 38). 학급 설정 / 41(v2 39). 데이터 내려받기 ----------
 
 route('/teacher/settings', async function(){
   if(!requireTeacherSession()) return;
@@ -1519,6 +2051,11 @@ route('/teacher/settings', async function(){
       '<button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="App.updateStudentCount()">저장</button>' +
     '</div>' +
     '<div class="card">' +
+      '<label class="field-label">모둠 수 (현재 ' + (ci.groupCount||6) + '모둠)</label>' +
+      '<input type="number" id="set-group-count" value="' + (ci.groupCount||6) + '" min="1" max="10" />' +
+      '<button class="btn btn-secondary btn-small" style="margin-top:8px;" onclick="App.updateGroupCount()">저장</button>' +
+    '</div>' +
+    '<div class="card">' +
       '<label class="field-label">2차시 열기 / 잠그기</label>' +
       '<button class="btn ' + (ci.lesson2Unlocked?'btn-main':'btn-secondary') + '" onclick="App.toggleLesson2(' + (!ci.lesson2Unlocked) + ')">' +
         (ci.lesson2Unlocked ? '🔓 열려 있음 (누르면 잠그기)' : '🔒 잠겨 있음 (누르면 열기)') + '</button>' +
@@ -1539,8 +2076,9 @@ route('/teacher/settings', async function(){
       '</div>' +
     '</div>' +
     '<div class="card">' +
-      '<label class="field-label">학급 데이터 내려받기</label>' +
+      '<label class="field-label">데이터 내려받기</label>' +
       '<button class="btn btn-main" onclick="App.downloadCsv()">학급 기록 내려받기 (CSV)</button>' +
+      '<button class="btn btn-secondary" style="margin-top:10px;" onclick="App.downloadGroupCsv()">이음 프로젝트 내려받기 (CSV)</button>' +
     '</div>' +
     '<div class="center"><button class="btn btn-ghost" onclick="go(\'/teacher/home\')">← 교사 연구실로</button></div>'
   );
@@ -1563,6 +2101,14 @@ App.updateStudentCount = async function(confirmReduce){
     return;
   }
   toast(res.ok ? '학생 수를 변경했어요.' : (res.error||'변경하지 못했어요.'));
+  if(res.ok) go('/teacher/settings');
+};
+
+App.updateGroupCount = async function(){
+  var v = Number(document.getElementById('set-group-count').value);
+  var res = await api('updateClassSettings', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken, groupCount: v });
+  if(res.warning){ toast(res.warning); }
+  toast(res.ok ? '모둠 수를 변경했어요.' : (res.error||'변경하지 못했어요.'));
   if(res.ok) go('/teacher/settings');
 };
 
@@ -1599,6 +2145,17 @@ App.downloadCsv = async function(){
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url; a.download = res.filename || 'class_export.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+App.downloadGroupCsv = async function(){
+  var res = await api('exportGroupData', { classCode: Session.teacherClassCode, sessionToken: Session.teacherToken });
+  if(!res.ok){ toast(res.error||'내려받지 못했어요.'); return; }
+  var blob = new Blob(['﻿' + res.csv], { type:'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = res.filename || 'group_export.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 };
