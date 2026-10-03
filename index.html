@@ -348,9 +348,9 @@ var _lastCreatedClass = null;
 route('/', function(){
   setApp(
     '<div class="top-brand">' +
-      '<h1>단청, 색을 입혀 시간을 잇다</h1>' +
+      '<h1>색을 입혀 시간을 잇다, 단청</h1>' +
       '<div class="sub">단청 이음 연구소</div>' +
-      '<div class="motif">🪷</div>' +
+      '<div class="motif">🌸</div>' +
     '</div>' +
     '<div class="card">' +
       '<label class="field-label" for="login-code">나의 이음 코드를 입력하세요.</label>' +
@@ -359,7 +359,7 @@ route('/', function(){
       '<button class="btn btn-main" onclick="App.doLogin()">연구소 들어가기</button>' +
     '</div>' +
     '<div class="center"><button class="btn btn-ghost" onclick="go(\'/create-class\')">＋ 새 학급 만들기</button></div>' +
-    '<div class="footnote">이 로그인 방식은 비밀번호가 필요 없어요. 교실 안에서 선생님의 지도 아래 사용하는 것을 전제로 설계되었습니다.</div>'
+    '<div class="footnote">이 로그인 방식은 비밀번호가 없어요. 같은 교실 안에서 선생님의 지도 아래 사용하는 것을 전제로 설계되었습니다.</div>'
   );
   var input = document.getElementById('login-code');
   input.focus();
@@ -450,7 +450,7 @@ route('/class-created', function(){
   if(!_lastCreatedClass){ go('/'); return; }
   var c = _lastCreatedClass;
   setApp(
-    '<div class="top-brand"><h1>🪷</h1></div>' +
+    '<div class="top-brand"><h1>🌸</h1></div>' +
     '<div class="card center">' +
       '<h2>우리 반 이음 코드가 만들어졌어요.</h2>' +
       '<p><strong>학급 코드</strong><br><span style="font-size:1.3rem;">' + escapeHtml(c.classCode) + '</span></p>' +
@@ -582,7 +582,7 @@ route('/student/home', async function(){
 
   var l2html;
   if(!res.lesson2Unlocked){
-    var lockMsg = res.lesson2LockReason === 'lesson1_incomplete' ? '🔒 1차시를 먼저 완료해 주세요' : '🔒 선생님이 아직 수업을 열지 않았어요';
+    var lockMsg = res.lesson2LockReason === 'lesson1_incomplete' ? '🔒 1차시를 먼저 완료해 주세요' : '🔒 선생님이 아직 열지 않았어요';
     l2html = '<div class="status-badge status-locked">' + lockMsg + '</div>';
   } else if(res.lesson2Status === 'final_done'){
     l2html = '<div class="status-badge status-done">✓ 탐구 완료</div>' +
@@ -594,7 +594,7 @@ route('/student/home', async function(){
   }
 
   setApp(
-    '<div class="top-brand"><h1>🪷 나의 단청 이음 기록</h1><div class="sub">' + escapeHtml(res.studentCode) + ' 연구원</div></div>' +
+    '<div class="top-brand"><h1>🌸 나의 단청 이음 기록</h1><div class="sub">' + escapeHtml(res.studentCode) + ' 연구원</div></div>' +
     '<div class="card lesson-card">' +
       '<span class="emoji">🌱</span><h2>1차시 · 색 속에 담긴 시간을 읽다</h2>' +
       '<p class="muted">단청에는 무엇이 담겨 있을까?</p>' +
@@ -602,9 +602,14 @@ route('/student/home', async function(){
       (l1Target ? '<button class="btn btn-main" onclick="go(\''+l1Target+'\')">1차시 탐구하기 · ' + l1btnLabel + '</button>' : '') +
     '</div>' +
     '<div class="card lesson-card">' +
-      '<span class="emoji">🪷</span><h2>2차시 · 오늘의 색으로 시간을 잇다</h2>' +
+      '<span class="emoji">🌸</span><h2>2차시 · 오늘의 색으로 시간을 잇다</h2>' +
       '<p class="muted">단청을 잇는다는 것은 무엇일까?</p>' +
       l2html +
+    '</div>' +
+    '<div class="card center">' +
+      '<span class="emoji">🌷</span><h2 style="margin-top:4px;">우리 반 꽃밭</h2>' +
+      '<p class="muted">친구들이 피운 가치를 둘러볼 수 있어요.</p>' +
+      '<button class="btn btn-secondary" onclick="go(\'/garden\')">🌷 우리 반 꽃밭 보기</button>' +
     '</div>'
   );
 });
@@ -890,7 +895,7 @@ route('/student/lesson1/step2', function(){
       '<div class="dancheong-observation" id="dc-svg-wrap">' + buildDancheongSvgMarkup() + '</div>' +
       '<div class="element-toggle-grid">' +
         dcToggleButtonHtml('color', '🎨', '색') +
-        dcToggleButtonHtml('pattern', '🪷', '문양') +
+        dcToggleButtonHtml('pattern', '🌸', '문양') +
         dcToggleButtonHtml('repetition', '🔁', '반복') +
         dcToggleButtonHtml('symmetry', '⚖', '대칭') +
       '</div>' +
@@ -983,7 +988,7 @@ route('/student/lesson1/lotus', async function(){
 
 function renderLotusScreen(){
   var petals = _lotus.values.map(function(v,idx){
-    return '<span class="petal-chip" onclick="App.editPetalPrompt('+idx+')">🪷 ' + escapeHtml(v) + '</span>';
+    return '<span class="petal-chip" onclick="App.editPetalPrompt('+idx+')">🌸 ' + escapeHtml(v) + '</span>';
   }).join('');
   var canComplete = _lotus.values.length >= 3;
   var draft = Draft.load('l1lotusGen') || {};
@@ -991,7 +996,7 @@ function renderLotusScreen(){
   setApp(
     '<div class="top-brand"><h2>나의 연꽃</h2><p class="muted">오늘 단청에서 어떤 가치를 발견했나요?</p></div>' +
     '<div class="card center">' +
-      '<div class="lotus-visual">' + (_lotus.values.length ? '🪷' : '🌱') + '</div>' +
+      '<div class="lotus-visual">' + (_lotus.values.length ? '🌸' : '🌱') + '</div>' +
       '<div class="petal-list" style="justify-content:center;">' + petals + '</div>' +
       (_lotus.values.length < 6 ? '<button class="btn btn-secondary" onclick="App.openPetalForm()">＋ 꽃잎 피우기</button>' : '<p class="muted">꽃잎을 최대로 피웠어요.</p>') +
       (!canComplete ? '<div class="lock-note" style="margin-top:14px;">가치를 3개 이상 발견하면 연꽃의 마음을 완성할 수 있어요. (' + _lotus.values.length + '/3)</div>' : '') +
@@ -1078,7 +1083,7 @@ route('/student/lesson1/complete', function(){
   setApp(
     '<div class="top-brand"><h1>나의 단청 연꽃</h1></div>' +
     '<div class="card center">' +
-      '<div class="lotus-visual">🪷</div>' +
+      '<div class="lotus-visual">🌸</div>' +
       '<p><strong>꽃잎:</strong> ' + _lotus.values.map(escapeHtml).join(' / ') + '</p>' +
       '<p style="margin-top:10px;">"' + escapeHtml(_lotus.generalization) + '"</p>' +
       '<button class="btn btn-main" onclick="go(\'/student/home\')">1차시 마치기</button>' +
@@ -1124,6 +1129,7 @@ route('/teacher/home', async function(){
       '<div class="menu-tile" onclick="go(\'/teacher/values\')"><span class="fe">③</span>연꽃 가치</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/groups\')"><span class="fe">👥</span>이음 프로젝트</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/changes\')"><span class="fe">④</span>수업 전후 변화</div>' +
+      '<div class="menu-tile" onclick="go(\'/garden\')"><span class="fe">🌷</span>우리 반 꽃밭</div>' +
       '<div class="menu-tile" onclick="go(\'/teacher/settings\')" style="grid-column:1/3;"><span class="fe">⑤</span>학급 설정</div>' +
     '</div>' +
     '<div class="center"><button class="btn btn-ghost" onclick="Session.clearTeacher(); go(\'/\')">로그아웃</button></div>'
@@ -1137,7 +1143,7 @@ route('/teacher/progress', async function(){
   if(!res) return;
   var rows = res.progress.map(function(p){
     var l1mark = p.lesson1Status === 'lotus_done' ? '✓' : (p.lesson1Status === 'not_started' ? '-' : '진행 중');
-    var lotusMark = p.lesson1Status === 'lotus_done' ? '🪷' : '-';
+    var lotusMark = p.lesson1Status === 'lotus_done' ? '🌸' : '-';
     var l2mark = p.lesson2Status === 'final_done' ? '✓' : (p.lesson2Status === 'not_started' ? '-' : '진행 중');
     var finalMark = p.lesson2Status === 'final_done' ? '✓' : '-';
     return '<tr title="1차시: ' + escapeHtml(p.lesson1Label) + ' / 2차시: ' + escapeHtml(p.lesson2Label) + '">' +
@@ -1172,7 +1178,7 @@ route('/student/lesson2/step1', async function(){
     '<div class="card">' +
       '<h3>수업 전의 나</h3><p>"' + escapeHtml(res.pre.concept||'') + '"</p>' +
       '<h3>내가 피운 단청 연꽃</h3>' +
-      '<div class="lotus-visual">🪷</div>' +
+      '<div class="lotus-visual">🌸</div>' +
       '<p style="text-align:center;">' + (res.lotusValues||[]).map(escapeHtml).join(' · ') + '</p>' +
       '<h3>1차시 후 나의 생각</h3><p>"' + escapeHtml(res.lesson1Generalization||'') + '"</p>' +
       '<div class="lock-note" style="margin-top:14px;">처음의 나와 지금의 나는 무엇이 달라졌나요? — <strong>짝과 이야기해 보세요.</strong></div>' +
@@ -1208,7 +1214,7 @@ route('/student/lesson2/home', function(){
       '<p class="muted">활동지로 활동합니다.</p>' +
     '</div>' +
     '<div class="card lesson-card">' +
-      '<span class="emoji">🪷</span><h2>마무리 · 나의 단청 연꽃, 다시 피어나다</h2>' +
+      '<span class="emoji">🌸</span><h2>마무리 · 나의 단청 연꽃, 다시 피어나다</h2>' +
       '<p class="muted">각자의 이음 코드로 접속합니다.</p>' +
       '<button class="btn btn-main" onclick="go(\'/student/lesson2/step3\')">나의 마무리 시작</button>' +
     '</div>' +
@@ -1730,7 +1736,7 @@ route('/student/lesson2/step3', async function(){
 function renderLesson2Step3(){
   var petalDraft = Draft.load('l2addedPetal') || {};
   var finalDraft = Draft.load('l2finalConcept') || {};
-  var petals = _lotus.values.map(function(v){ return '<span class="petal-chip">🪷 ' + escapeHtml(v) + '</span>'; }).join('');
+  var petals = _lotus.values.map(function(v){ return '<span class="petal-chip">🌸 ' + escapeHtml(v) + '</span>'; }).join('');
 
   var addFormHtml = _addPetalMode === 'add' ?
     '<div style="margin-top:12px;">' +
@@ -1741,7 +1747,7 @@ function renderLesson2Step3(){
     '</div>' : '';
 
   setApp(
-    '<div class="top-brand"><h1>🪷 나의 단청 연꽃, 다시 피어나다</h1><p class="muted">1차시에 내가 발견한 단청의 가치를 다시 살펴보세요.</p></div>' +
+    '<div class="top-brand"><h1>🌸 나의 단청 연꽃, 다시 피어나다</h1><p class="muted">1차시에 내가 발견한 단청의 가치를 다시 살펴보세요.</p></div>' +
     '<div class="card">' +
       '<div class="petal-list">' + petals + '</div>' +
       '<p style="margin-top:10px;">단청을 어떻게 이어 갈지 생각해 보고 나니 새롭게 중요하다고 느낀 가치가 있나요?</p>' +
@@ -1836,11 +1842,11 @@ route('/student/final', async function(){
     '<div class="center" style="font-size:1.4rem; color:var(--gold);">↓</div>' +
     '<div class="card">' +
       '<h3>탐구하며 피운 가치</h3>' +
-      '<div class="petal-list">' + (res.lotusValues||[]).map(function(v){ return '<span class="petal-chip">🪷 '+escapeHtml(v)+'</span>'; }).join('') + '</div>' +
+      '<div class="petal-list">' + (res.lotusValues||[]).map(function(v){ return '<span class="petal-chip">🌸 '+escapeHtml(v)+'</span>'; }).join('') + '</div>' +
     '</div>' +
     (res.addedValue ?
       '<div class="center" style="font-size:1.4rem; color:var(--gold);">↓</div>' +
-      '<div class="card"><h3>새롭게 피어난 가치</h3><span class="petal-chip new">🪷 ' + escapeHtml(res.addedValue) + '</span></div>'
+      '<div class="card"><h3>새롭게 피어난 가치</h3><span class="petal-chip new">🌸 ' + escapeHtml(res.addedValue) + '</span></div>'
       : '') +
     (post ?
       '<div class="center" style="font-size:1.4rem; color:var(--gold);">↓</div>' +
@@ -1857,11 +1863,11 @@ route('/student/final', async function(){
 
 route('/garden', async function(){
   setApp(loadingHtml());
-  var res = await api('getClassGarden', { classCode: Session.classCode });
+  var res = await api('getClassGarden', { classCode: Session.classCode || Session.teacherClassCode });
   if(!res.ok){ setApp('<div class="card center"><p>' + escapeHtml(res.error||'불러오지 못했어요.') + '</p></div>'); return; }
   window._gardenFlowers = res.flowers || [];
   var tiles = window._gardenFlowers.map(function(f, idx){
-    return '<div class="flower-tile" onclick="App.showFlower(' + idx + ')"><div class="fe">🪷</div><div class="muted">' + f.lotusValues.length + '개 가치</div></div>';
+    return '<div class="flower-tile" onclick="App.showFlower(' + idx + ')"><div class="fe">🌸</div><div class="muted">' + f.lotusValues.length + '개 가치</div></div>';
   }).join('');
   setApp(
     '<div class="top-brand"><h1>🌷 우리 반 단청 이음 연꽃밭</h1><p class="muted">이름과 번호는 공개되지 않아요.</p></div>' +
@@ -1875,7 +1881,7 @@ App.showFlower = function(idx){
   var f = window._gardenFlowers[idx];
   document.getElementById('flower-detail').innerHTML =
     '<div class="card">' +
-      '<h3>🪷 발견한 가치</h3><p>' + f.lotusValues.map(escapeHtml).join(' · ') + '</p>' +
+      '<h3>🌸 발견한 가치</h3><p>' + f.lotusValues.map(escapeHtml).join(' · ') + '</p>' +
       '<h3>마지막 생각</h3><p>"' + escapeHtml(f.finalThought||'') + '"</p>' +
     '</div>';
   document.getElementById('flower-detail').scrollIntoView({behavior:'smooth'});
